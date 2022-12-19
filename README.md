@@ -17,7 +17,7 @@ def example(x: int, y: int):
 
 Now, instead of integers, your function can take lists of integers. The function will
 be repeated or each item in your list on a separate thread:
-```
+```python3
 start = time.time()
 result = example([1, 2, 3, 4, 5], 10)
 print(result)
