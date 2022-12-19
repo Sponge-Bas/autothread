@@ -4,7 +4,7 @@ this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text()
 
 setup(
-  name = 'threadoy',
+  name = 'threadpy',
   packages = ['threadpy'],
   version = '0.1',
   license='MIT',
@@ -14,7 +14,7 @@ setup(
   author_email = 'basdbruijne@gmail.com',
   url = 'https://github.com/Basdbruijne/thready',
   keywords = ['multithreading', 'multiprocessing', 'decorator'],
-  install_requires = open('requirements.txt').read().splitlines,
+  install_requires = open('requirements.txt').read().splitlines(),
   classifiers=[  # Optional
     # How mature is this project? Common values are
     #   3 - Alpha
