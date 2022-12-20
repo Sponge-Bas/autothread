@@ -4,13 +4,13 @@
 # held responsible for any problems caused by the use of this module.
 
 import inspect
+import mock
 import multiprocessing as mp
 import psutil
 import queue
 import threading
 import typeguard
 import warnings
-import mock
 from tqdm import tqdm
 from typing import List, Union, Optional, Tuple, Dict
 
@@ -50,6 +50,11 @@ class _Multiprocessed:
         """Initialize the decorator
 
         :param function: function to decorate
+        :param Process: Process class (e.g. mp.Process or threading.Process)
+        :param Queue: Queue class (e.g. mp.Queue or queue.Queue)
+        :param Semaphore: Semaphore class (e.g. mp.Semaphore or threading.Semaphore)
+        :param n_workers: [int] Total number of workers to use
+        :param progress_bar: [bool] Whether to show a progress bar when executing
         """
         self._Process = Process
         self._Queue = Queue
@@ -61,7 +66,7 @@ class _Multiprocessed:
 
     @property
     def __signature__(self):
-        """Updates the __doc__ and __signature__ to match the received function"""
+        """Updates the __signature__ to match the received function"""
         signature = inspect.signature(self._function)
         new_params = []
         for k in self._params:
@@ -94,6 +99,7 @@ class _Multiprocessed:
 
     @property
     def __doc__(self):
+        """Updates the __doc__ to match the received function"""
         if self._function.__doc__:
             return self._function.__doc__ + (
                 "\n This function is automatically parallelized using autothread. Any "
