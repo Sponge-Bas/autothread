@@ -107,33 +107,13 @@ class _Multiprocessed:
         :param args: Arguments to forward to the function
         :param kwargs: Keyword argumented to forward
         """
-        self._queue = self._Queue()
-        self._processes = []
-        if self.n_workers >= 0:
-            self._sema = self._Semaphore(self.n_workers)
-        else:
-            self._sema = mock.Mock()
-        loop_params = kwargs.pop("_loop_params", None)
-        self._merge_args(args, kwargs)
-        self._loop_params = self._get_loop_params(loop_params)
-        self._verify_loop_params(self._loop_params)
+        self._setup(args, kwargs)
 
         if not self._loop_params:  # just run the function as normal
             return self._function(*args, **kwargs)
 
         results = {}
-        n_threads = self._arg_lengths[self._loop_params[0]]
-        for i in tqdm(range(n_threads)) if self._progress_bar else range(n_threads):
-            args = [self._queue, self._function, self._sema, i]
-            for k, v in self._kwargs.items():
-                value = v["value"][i] if k in self._loop_params else v["value"]
-                if v["is_kwarg"]:
-                    self._extra_kwargs[k] = value
-                else:
-                    args.append(value)
-            args.extend(self._extra_args)
-            if n_threads == 1:
-                return self._function(*args[4:], **self._extra_kwargs)
+        for i, args, kwargs in self._contruct_args():
             self._sema.acquire()
             p = self._Process(target=_queuer, args=args, kwargs=self._extra_kwargs)
             p.start()
@@ -145,6 +125,23 @@ class _Multiprocessed:
             results.update(self._collect_result())
 
         return [v[1] for v in sorted(results.items())]
+
+    def _setup(self, args, kwargs):
+        """Setup the multiprocessing variables and arguments
+
+        :param args: Arguments to forward to the function
+        :param kwargs: Keyword argumented to forward
+        """
+        self._queue = self._Queue()
+        self._processes = []
+        if self.n_workers >= 0:
+            self._sema = self._Semaphore(self.n_workers)
+        else:
+            self._sema = mock.Mock()
+        loop_params = kwargs.pop("_loop_params", None)
+        self._merge_args(args, kwargs)
+        self._loop_params = self._get_loop_params(loop_params)
+        self._verify_loop_params(self._loop_params)
 
     def _merge_args(self, args: Tuple, kwargs: Dict):
         """Merge args into kwargs
@@ -245,6 +242,25 @@ class _Multiprocessed:
                 "parallelize for."
             )
         return loop_params
+
+    def _contruct_args(self):
+        """Contruct arguments and keyword arguments for each thread/process
+
+        For each argument, extract an item if it is in the loop_params or just select
+        the value and put them in tuples and dicts to forward to the function.
+        """
+        n_threads = self._arg_lengths[self._loop_params[0]]
+        for i in tqdm(range(n_threads)) if self._progress_bar else range(n_threads):
+            args = [self._queue, self._function, self._sema, i]
+            for k, v in self._kwargs.items():
+                value = v["value"][i] if k in self._loop_params else v["value"]
+                if v["is_kwarg"]:
+                    self._extra_kwargs[k] = value
+                else:
+                    args.append(value)
+            args.extend(self._extra_args)
+
+            yield i, args, self._extra_kwargs
 
     def _collect_result(self):
         """Collect the results from the queue and raise possible errors

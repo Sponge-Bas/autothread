@@ -1,10 +1,9 @@
 import time
-import sys
-from autothread import multiprocessed, multithreaded
-from typing import List, Union
-import random
+import typing
 import unittest
-from mock import patch, AsyncMock, ANY, Mock
+
+from autothread import multiprocessed, multithreaded
+from mock import patch
 
 
 @multithreaded()
@@ -180,7 +179,7 @@ class TestThreadypyExtraArgs(unittest.TestCase):
             duration = time.time() - start
 
             self.assertTrue(duration < 0.1)
-            self.assertEqual(result, (1, 1, 1))
+            self.assertEqual(result, [(1, 1, 1)])
 
 
 class TestWarnings(unittest.TestCase):
@@ -232,3 +231,26 @@ class TestLengthWarnings(unittest.TestCase):
     def test_length_error2(self, mock_warn):
         result = self._warnings([1, 3], 2, z=[1, 3, 4])
         self.assertEqual(result, [(1, 2, 2), (3, 2, 6)])
+
+
+class TestNestedList(unittest.TestCase):
+    @multiprocessed()
+    def _test(self, x: typing.List[int], y: int):
+        time.sleep(0.05)
+        return x, y, max(x) * y
+
+    def test_nested_list1(self):
+        result = self._test([1, 2, 3, 4], 5)
+        self.assertEqual(result, ([1, 2, 3, 4], 5, 20))
+
+    def test_nested_list2(self):
+        result = self._test([1, 2], [1, 5])
+        self.assertEqual(result, [([1, 2], 1, 2), ([1, 2], 5, 10)])
+
+    def test_nested_list3(self):
+        result = self._test([[1, 2], [3, 4]], 5)
+        self.assertEqual(result, [([1, 2], 5, 10), ([3, 4], 5, 20)])
+
+    def test_nested_list4(self):
+        result = self._test([[1, 2], [3, 4]], [1, 5])
+        self.assertEqual(result, [([1, 2], 1, 2), ([3, 4], 5, 20)])
