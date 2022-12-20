@@ -1,6 +1,6 @@
 import time
 import sys
-from threadpy import multiprocessed, multithreaded
+from autothread import multiprocessed, multithreaded
 from typing import List, Union
 import random
 import unittest
@@ -189,7 +189,7 @@ class TestWarnings(unittest.TestCase):
         time.sleep(0.05)
         return x, y, x * y
 
-    @patch("threadpy.warnings.warn")
+    @patch("autothread.warnings.warn")
     def test_missing_type_hint(self, mock_warn):
         result = self._warnings([1, 3, 4], 2)
         self.assertEqual(result, ([1, 3, 4], 2, [1, 3, 4, 1, 3, 4]))
@@ -200,13 +200,13 @@ class TestWarnings(unittest.TestCase):
             "argument to specify the parameters to parallelize for."
         )
 
-    @patch("threadpy.warnings.warn")
+    @patch("autothread.warnings.warn")
     def test_missing_type_hint2(self, mock_warn):
         result = self._warnings(2, [1, 3, 4])
         self.assertEqual(result, ([(2, 1, 2), (2, 3, 6), (2, 4, 8)]))
         mock_warn.assert_not_called()
 
-    @patch("threadpy.warnings.warn")
+    @patch("autothread.warnings.warn")
     def test_missing_type_hint3(self, mock_warn):
         result = self._warnings(1, 2, z=[1, 3, 4])
         self.assertEqual(result, (1, 2, 2))
@@ -228,7 +228,7 @@ class TestLengthWarnings(unittest.TestCase):
         with self.assertRaises(IndexError):
             self._warnings([1, 3, 4], [2, 2])
 
-    @patch("threadpy.warnings.warn")
+    @patch("autothread.warnings.warn")
     def test_length_error2(self, mock_warn):
         result = self._warnings([1, 3], 2, z=[1, 3, 4])
         self.assertEqual(result, [(1, 2, 2), (3, 2, 6)])

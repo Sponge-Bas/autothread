@@ -4,15 +4,15 @@ this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text()
 
 setup(
-  name = 'threadpy',
-  packages = ['threadpy'],
+  name = 'autothread',
+  packages = ['autothread'],
   version = '0.1',
   license='MIT',
   long_description=long_description,
   long_description_content_type='text/markdown',
   author = 'Bas de Bruijne',
   author_email = 'basdbruijne@gmail.com',
-  url = 'https://github.com/Basdbruijne/thready',
+  url = 'https://github.com/Basdbruijne/autothread',
   keywords = ['multithreading', 'multiprocessing', 'decorator'],
   install_requires = open('requirements.txt').read().splitlines(),
   classifiers=[  # Optional

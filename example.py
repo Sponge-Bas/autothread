@@ -1,8 +1,8 @@
-import threadpy
+import autothread
 import time
 from time import sleep as heavyworkload
 
-@threadpy.multithreaded() # <-- This is all you need to add
+@autothread.multithreaded() # <-- This is all you need to add
 def example(x: int, y: int):
     heavyworkload(1)
     return x*y

@@ -1,6 +1,6 @@
 # Copyright 2022 by Bas de Bruijne
 # All rights reserved.
-# threadpy comes with ABSOLUTELY NO WARRANTY, the writer can not be
+# autothread comes with ABSOLUTELY NO WARRANTY, the writer can not be
 # held responsible for any problems caused by the use of this module.
 
 import inspect
@@ -13,7 +13,6 @@ import warnings
 import mock
 from tqdm import tqdm
 from typing import List, Union, Optional, Tuple, Dict
-from multiprocessing.pool import ThreadPool
 
 
 def _checks_type(value, type_hint):
@@ -97,8 +96,8 @@ class _Multiprocessed:
     def __doc__(self):
         if self._function.__doc__:
             return self._function.__doc__ + (
-                "\n This function is automatically parallelized using threadpy. Any of "
-                " this function's arguments can be substituted with a list and this "
+                "\n This function is automatically parallelized using autothread. Any "
+                "of this function's arguments can be substituted with a list and this "
                 "function will be repeated for each item in that list."
             )
 
@@ -261,6 +260,9 @@ class _Multiprocessed:
             raise content
         return res
 
+    def kill_all(self, *args):
+        for p in self._processes:
+            p.terminate()
 
 def _get_workers(*args):
     """Determined the number of workers to use based on the users inputs

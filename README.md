@@ -1,15 +1,15 @@
-# Threadpy
+# Autothread
 
 Parallelization made easy.
 
-Threadpy allows you to add multithreading/multiprocessing to your functions by adding
+Autothread allows you to add multithreading/multiprocessing to your functions by adding
 just a single line:
 
 ```python
-import threadpy
+import autothread
 from time import sleep as heavyworkload
 
-@threadpy.multithreaded() # <-- This is all you need to add
+@Autothread.multithreaded() # <-- This is all you need to add
 def example(x: int, y: int):
     heavyworkload(1)
     return x*y
@@ -26,6 +26,6 @@ print("Time expired: ", time.time()-start)
     Time expired:  1.0041766166687012
 ```
 
-Threadpy uses the type-hinting of your funtion to reliably determine which paremeters
+autothread uses the type-hinting of your funtion to reliably determine which paremeters
 you intent to keep constant and which parameters need to change for every thread.
-`threadpy.multiprocessed` functions exactly the same but will apply multiprocessing instead.
+`autothread.multiprocessed` functions exactly the same but will apply multiprocessing instead.
