@@ -6,7 +6,7 @@ long_description = (this_directory / "README.md").read_text()
 setup(
   name = 'autothread',
   packages = ['autothread'],
-  version = '0.1',
+  version = '0.4',
   license='MIT',
   long_description=long_description,
   long_description_content_type='text/markdown',
@@ -14,7 +14,7 @@ setup(
   author_email = 'basdbruijne@gmail.com',
   url = 'https://github.com/Basdbruijne/autothread',
   keywords = ['multithreading', 'multiprocessing', 'decorator'],
-  install_requires = open('requirements.txt').read().splitlines(),
+  install_requires = ['psutil', 'tqdm', 'typeguard', 'typing', 'mock'],
   classifiers=[  # Optional
     # How mature is this project? Common values are
     #   3 - Alpha
