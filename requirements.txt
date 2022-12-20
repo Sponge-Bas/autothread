@@ -1,3 +1,4 @@
 psutil
+tqdm
 typeguard
 typing

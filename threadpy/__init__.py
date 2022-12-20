@@ -10,8 +10,10 @@ import queue
 import threading
 import typeguard
 import warnings
-
+import mock
+from tqdm import tqdm
 from typing import List, Union, Optional, Tuple, Dict
+from multiprocessing.pool import ThreadPool
 
 
 def _checks_type(value, type_hint):
@@ -27,17 +29,14 @@ def _checks_type(value, type_hint):
         return False
 
 
-_random_string = "54c1cfbf-32d4-4f2c-bff8-e70d2481dfca"
-
-
-def _queuer(queue, function, index, *args, **kwargs):
+def _queuer(queue, function, semaphore, index, *args, **kwargs):
     """Function wrapper to put the outputs in the queue"""
     try:
         output = function(*args, **kwargs)
     except Exception as e:
-        # return unlikely object containing the error in case the function itself
-        # returns an error
-        output = {_random_string: e}
+        e.tp_intercepted = True
+        output = e
+    semaphore.release()
     queue.put({index: output})
 
 
@@ -48,16 +47,18 @@ class _Multiprocessed:
     """Decorator class that transforms a function into a multi processed
     function simply by adding a single decorator."""
 
-    def __init__(self, function, Process, Queue, n_workers):
+    def __init__(self, function, Process, Queue, Semaphore, n_workers, progress_bar):
         """Initialize the decorator
 
         :param function: function to decorate
         """
         self._Process = Process
         self._Queue = Queue
+        self._Semaphore = Semaphore
         self._function = function
         self.n_workers = n_workers
         self._params = inspect.signature(self._function).parameters
+        self._progress_bar = progress_bar
 
     @property
     def __signature__(self):
@@ -96,9 +97,9 @@ class _Multiprocessed:
     def __doc__(self):
         if self._function.__doc__:
             return self._function.__doc__ + (
-                "\n This function is automatically parallelized using threadpy. Any of this"
-                " function's arguments can be substituted with a list and this function "
-                "will be repeated for each item in that list."
+                "\n This function is automatically parallelized using threadpy. Any of "
+                " this function's arguments can be substituted with a list and this "
+                "function will be repeated for each item in that list."
             )
 
     def __call__(self, *args, **kwargs):
@@ -107,8 +108,12 @@ class _Multiprocessed:
         :param args: Arguments to forward to the function
         :param kwargs: Keyword argumented to forward
         """
-        self._queue = self._Queue(maxsize=self.n_workers)
+        self._queue = self._Queue()
         self._processes = []
+        if self.n_workers >= 0:
+            self._sema = self._Semaphore(self.n_workers)
+        else:
+            self._sema = mock.Mock()
         loop_params = kwargs.pop("_loop_params", None)
         self._merge_args(args, kwargs)
         self._loop_params = self._get_loop_params(loop_params)
@@ -117,9 +122,10 @@ class _Multiprocessed:
         if not self._loop_params:  # just run the function as normal
             return self._function(*args, **kwargs)
 
+        results = {}
         n_threads = self._arg_lengths[self._loop_params[0]]
-        for i in range(n_threads):
-            args = [self._queue, self._function, i]
+        for i in tqdm(range(n_threads)) if self._progress_bar else range(n_threads):
+            args = [self._queue, self._function, self._sema, i]
             for k, v in self._kwargs.items():
                 value = v["value"][i] if k in self._loop_params else v["value"]
                 if v["is_kwarg"]:
@@ -128,12 +134,18 @@ class _Multiprocessed:
                     args.append(value)
             args.extend(self._extra_args)
             if n_threads == 1:
-                return self._function(*args[3:], **self._extra_kwargs)
+                return self._function(*args[4:], **self._extra_kwargs)
+            self._sema.acquire()
             p = self._Process(target=_queuer, args=args, kwargs=self._extra_kwargs)
             p.start()
             self._processes.append(p)
+            if i >= self.n_workers and self.n_workers >= 0:
+                results.update(self._collect_result())
 
-        return self._collect_results()
+        while self._processes:
+            results.update(self._collect_result())
+
+        return [v[1] for v in sorted(results.items())]
 
     def _merge_args(self, args: Tuple, kwargs: Dict):
         """Merge args into kwargs
@@ -161,7 +173,7 @@ class _Multiprocessed:
                 self._kwargs[k] = {"value": v, "is_kwarg": True}
 
         self._arg_lengths = {}
-        for i, (k, v) in enumerate(self._kwargs.items()):
+        for k, v in self._kwargs.items():
             length = len(v["value"]) if _is_listy(v["value"]) else None
             self._arg_lengths[k] = length
 
@@ -235,22 +247,19 @@ class _Multiprocessed:
             )
         return loop_params
 
-    def _collect_results(self):
+    def _collect_result(self):
         """Collect the results from the queue and raise possible errors
 
         The queue does not return items in order if the processing times are different
         for different parameters. The queue will return (N, output) where N is its
         original place in the queue that must be sorted.
         """
-        result = {}
-        for process in self._processes:
-            process.join()
-            result.update(self._queue.get())
-        result = [v[1] for v in sorted(result.items())]
-        for res in result:
-            if isinstance(res, dict) and isinstance(res.get(_random_string), Exception):
-                raise res[_random_string]
-        return result
+        self._processes.pop(0).join()
+        res = self._queue.get()
+        content = list(res.values())[0]
+        if isinstance(content, Exception) and getattr(content, "tp_intercepted", False):
+            raise content
+        return res
 
 
 def _get_workers(*args):
@@ -265,21 +274,22 @@ def _get_workers(*args):
         raise ValueError(
             "Please only define either 'n_workers', 'mb_mem', 'or workers_per_core'."
         )
-    mb_mem, n_workers, workers_per_core = args
+    n_workers, mb_mem, workers_per_core = args
     if mb_mem:
         return int(psutil.virtual_memory().total / 1024**2 // mb_mem)
     elif workers_per_core:
         return int(workers_per_core * mp.cpu_count())
     elif n_workers is None:
         return mp.cpu_count()
-    elif n_workers == -1:
-        return 0
     else:
         return n_workers
 
 
 def multiprocessed(
-    n_workers: int = None, mb_mem: int = None, workers_per_core: float = None
+    n_workers: int = None,
+    mb_mem: int = None,
+    workers_per_core: float = None,
+    progress_bar: bool = False,
 ):
     """Decorator to make any function multiprocessed
 
@@ -290,15 +300,18 @@ def multiprocessed(
     :param n_workers: Total number of workers to run in parallel (0 for unlimited,
     (default) None for the amount of cores).
     :param mb_mem: Minimum megabytes of memory for each worker.
-    :workers_per_core: Number of workers to run per core.
+    :param workers_per_core: Number of workers to run per core.
+    :param progress_bar: Visualize how many of the tasks are completed
     """
 
     def _decorator(function):
         decorator = _Multiprocessed(
-            function,
-            mp.Process,
-            mp.Queue,
-            _get_workers(n_workers, mb_mem, workers_per_core),
+            function=function,
+            Process=mp.Process,
+            Queue=mp.Queue,
+            Semaphore=mp.Semaphore,
+            n_workers=_get_workers(n_workers, mb_mem, workers_per_core),
+            progress_bar=progress_bar,
         )
 
         def wrapper(*args, **kwargs):
@@ -313,7 +326,10 @@ def multiprocessed(
 
 
 def multithreaded(
-    n_workers: int = None, mb_mem: int = None, workers_per_core: int = None
+    n_workers: int = None,
+    mb_mem: int = None,
+    workers_per_core: int = None,
+    progress_bar: bool = False,
 ):
     """Decorator to make any function multithreaded
 
@@ -324,15 +340,18 @@ def multithreaded(
     :param n_workers: Total number of workers to run in parallel (0 for unlimited,
     (default) None for the amount of cores).
     :param mb_mem: Minimum megabytes of memory for each worker.
-    :workers_per_core: Number of workers to run per core.
+    :param workers_per_core: Number of workers to run per core.
+    :param progress_bar: Visualize how many of the tasks are completed
     """
 
     def _decorator(function):
         decorator = _Multiprocessed(
-            function,
-            threading.Thread,
-            queue.Queue,
-            _get_workers(n_workers, mb_mem, workers_per_core),
+            function=function,
+            Process=threading.Thread,
+            Queue=queue.Queue,
+            Semaphore=threading.Semaphore,
+            n_workers=_get_workers(n_workers, mb_mem, workers_per_core),
+            progress_bar=progress_bar,
         )
 
         def wrapper(*args, **kwargs):
