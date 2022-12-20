@@ -253,16 +253,19 @@ class _Multiprocessed:
         for different parameters. The queue will return (N, output) where N is its
         original place in the queue that must be sorted.
         """
-        self._processes.pop(0).join()
-        res = self._queue.get()
-        content = list(res.values())[0]
-        if isinstance(content, Exception) and getattr(content, "tp_intercepted", False):
-            raise content
-        return res
+        while self._processes:
+            for process in self._processes:
+                if process.is_alive():
+                    continue
+                self._processes.remove(process)
+                res = self._queue.get()
+                content = list(res.values())[0]
+                if isinstance(content, Exception) and getattr(
+                    content, "tp_intercepted", False
+                ):
+                    raise content
+                return res
 
-    def kill_all(self, *args):
-        for p in self._processes:
-            p.terminate()
 
 def _get_workers(*args):
     """Determined the number of workers to use based on the users inputs

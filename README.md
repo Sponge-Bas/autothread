@@ -66,4 +66,4 @@ If threadpy can't determine the original type hint (e.g. the type hint is missin
 the parameter is part of `*args` or `**kwargs`), threadpy will not divide the list over multiple processes. To override the autodetection of looping parameters for these cases, provide the
 `_loop_params` keyword with a list of parameters you intent to change for each process when calling your function. 
 
-For an overview of more detailed behavour, check `threadpy/test.py`.
+For an overview of more detailed behavior, check `threadpy/test.py`.
