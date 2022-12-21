@@ -43,6 +43,19 @@ cd autothread
 pip install -e .
 ```
 
+## Usage
+
+The `autothread.multithreaded` and `autothread.multiprocessed` decorator can be placed
+in front of any function to make them multithreaded/multiprocessed. The only requirement
+from the function (besides the regular multithreading and multiprocessing requirements) is
+that the function has typehinting for all the variables that you wish to vary for each thread.
+
+The decorators take 4 arguments to configure the executing:
+- n_workers (int) Total number of workers to run in parallel (0 for unlimited, (default) None for the amount of cores).
+- mb_mem (int): Minimum megabytes of memory for each worker, usefull when your script is memory limited.
+- workers_per_core (int): Number of workers to run per core.
+- progress_bar (int): Visualize how many of the tasks have started running
+
 ## How it works
 Autothread uses the type-hinting of your funtion to reliably determine which paremeters
 you intent to keep constant and which parameters need to change for every thread.
@@ -67,3 +80,9 @@ the parameter is part of `*args` or `**kwargs`), threadpy will not divide the li
 `_loop_params` keyword with a list of parameters you intent to change for each process when calling your function.
 
 For an overview of more detailed behavior, check `threadpy/test.py`.
+
+## Error handling
+If one of the processes fails, autothread will send a keyboard interrupt signal to all
+the other running threads/processes to give them a change to handle the exit gracefully.
+If you the threads to clean things up before exiting, just intercept the `KeyboardInterrupt`
+exeption and do the cleanup (just like you would in a single threaded case).

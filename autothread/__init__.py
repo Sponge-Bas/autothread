@@ -3,14 +3,17 @@
 # autothread comes with ABSOLUTELY NO WARRANTY, the writer can not be
 # held responsible for any problems caused by the use of this module.
 
+import ctypes
 import inspect
-import mock
 import multiprocessing as mp
+import os
 import psutil
 import queue
+import signal
 import threading
 import typeguard
 import warnings
+
 from tqdm import tqdm
 from typing import List, Union, Optional, Tuple, Dict
 
@@ -32,6 +35,8 @@ def _queuer(queue, function, semaphore, index, *args, **kwargs):
     """Function wrapper to put the outputs in the queue"""
     try:
         output = function(*args, **kwargs)
+    except KeyboardInterrupt:
+        return
     except Exception as e:
         e.tp_intercepted = True
         output = e
@@ -50,11 +55,6 @@ class _Multiprocessed:
         """Initialize the decorator
 
         :param function: function to decorate
-        :param Process: Process class (e.g. mp.Process or threading.Process)
-        :param Queue: Queue class (e.g. mp.Queue or queue.Queue)
-        :param Semaphore: Semaphore class (e.g. mp.Semaphore or threading.Semaphore)
-        :param n_workers: [int] Total number of workers to use
-        :param progress_bar: [bool] Whether to show a progress bar when executing
         """
         self._Process = Process
         self._Queue = Queue
@@ -66,7 +66,7 @@ class _Multiprocessed:
 
     @property
     def __signature__(self):
-        """Updates the __signature__ to match the received function"""
+        """Updates the __doc__ and __signature__ to match the received function"""
         signature = inspect.signature(self._function)
         new_params = []
         for k in self._params:
@@ -99,7 +99,6 @@ class _Multiprocessed:
 
     @property
     def __doc__(self):
-        """Updates the __doc__ to match the received function"""
         if self._function.__doc__:
             return self._function.__doc__ + (
                 "\n This function is automatically parallelized using autothread. Any "
@@ -140,10 +139,7 @@ class _Multiprocessed:
         """
         self._queue = self._Queue()
         self._processes = []
-        if self.n_workers >= 0:
-            self._sema = self._Semaphore(self.n_workers)
-        else:
-            self._sema = mock.Mock()
+        self._sema = self._Semaphore(self.n_workers if self.n_workers > 0 else int(1e9))
         loop_params = kwargs.pop("_loop_params", None)
         self._merge_args(args, kwargs)
         self._loop_params = self._get_loop_params(loop_params)
@@ -279,14 +275,32 @@ class _Multiprocessed:
             for process in self._processes:
                 if process.is_alive():
                     continue
+                process.join()
                 self._processes.remove(process)
                 res = self._queue.get()
                 content = list(res.values())[0]
                 if isinstance(content, Exception) and getattr(
                     content, "tp_intercepted", False
                 ):
+                    self._kill_all()
                     raise content
                 return res
+
+    def _kill_all(self):
+        """Terminates all running processes by sending them a keyboard interrupt"""
+        if self._Process == threading.Thread:
+            p_names = [p.name for p in self._processes]
+            for id, thread in threading._active.copy().items():
+                if thread.name in p_names:
+                    ctypes.pythonapi.PyThreadState_SetAsyncExc(
+                        ctypes.c_long(id),
+                        ctypes.py_object(KeyboardInterrupt),
+                    )
+        else:
+            for process in self._processes:
+                os.kill(process.pid, getattr(signal, "CTRL_C_EVENT", signal.SIGINT))
+        for process in self._processes:
+            process.join()
 
 
 def _get_workers(*args):
@@ -332,6 +346,8 @@ def multiprocessed(
     """
 
     def _decorator(function):
+        function.__module__ = __name__
+        globals()[function.__name__] = function
         decorator = _Multiprocessed(
             function=function,
             Process=mp.Process,
