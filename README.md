@@ -51,10 +51,10 @@ from the function (besides the regular multithreading and multiprocessing requir
 that the function has typehinting for all the variables that you wish to vary for each thread.
 
 The decorators take 4 arguments to configure the executing:
-- n_workers (int) Total number of workers to run in parallel (0 for unlimited, (default) None for the amount of cores).
-- mb_mem (int): Minimum megabytes of memory for each worker, usefull when your script is memory limited.
-- workers_per_core (int): Number of workers to run per core.
-- progress_bar (int): Visualize how many of the tasks have started running
+- `n_workers` (int) Total number of workers to run in parallel (0 for unlimited, (default) None for the amount of cores).
+- `mb_mem` (int): Minimum megabytes of memory for each worker, usefull when your script is memory limited.
+- `workers_per_core` (int): Number of workers to run per core.
+- `progress_bar` (int): Visualize how many of the tasks have started running
 
 ## How it works
 Autothread uses the type-hinting of your funtion to reliably determine which paremeters
@@ -75,8 +75,8 @@ Now, both `x` and `y` are `List[int]` while the original type hint is `int`. Thi
 `x` and `y` will be split over the multiple processes. This requires `x` and `y` to be of the same
 length.
 
-If threadpy can't determine the original type hint (e.g. the type hint is missing, incorrect, or 
-the parameter is part of `*args` or `**kwargs`), threadpy will not divide the list over multiple processes. To override the autodetection of looping parameters for these cases, provide the
+If autothread can't determine the original type hint (e.g. the type hint is missing, incorrect, or 
+the parameter is part of `*args` or `**kwargs`), autothread will not divide the list over multiple processes. To override the autodetection of looping parameters for these cases, provide the
 `_loop_params` keyword with a list of parameters you intent to change for each process when calling your function.
 
 For an overview of more detailed behavior, check `threadpy/test.py`.
@@ -84,5 +84,5 @@ For an overview of more detailed behavior, check `threadpy/test.py`.
 ## Error handling
 If one of the processes fails, autothread will send a keyboard interrupt signal to all
 the other running threads/processes to give them a change to handle the exit gracefully.
-If you the threads to clean things up before exiting, just intercept the `KeyboardInterrupt`
+If you want the threads to clean things up before exiting, just intercept the `KeyboardInterrupt`
 exeption and do the cleanup (just like you would in a single threaded case).
