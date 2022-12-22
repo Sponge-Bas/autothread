@@ -350,6 +350,9 @@ def multiprocessed(
     """
 
     def _decorator(function):
+        # For windows compatibility we can't pickly the function if its in another
+        # module, so we change the __module__ and add it to the globals.
+        function.__qualname__ = function.__name__
         function.__module__ = __name__
         globals()[function.__name__] = function
         decorator = _Multiprocessed(
