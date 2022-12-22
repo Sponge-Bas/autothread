@@ -86,3 +86,6 @@ If one of the processes fails, autothread will send a keyboard interrupt signal 
 the other running threads/processes to give them a change to handle the exit gracefully.
 If you want the threads to clean things up before exiting, just intercept the `KeyboardInterrupt`
 exeption and do the cleanup (just like you would in a single threaded case).
+
+## Known issues
+- Is it currently not possible to use `autothread.multiprocessed` within a class on a Windows machine due to issues with pickling the class. A fix will come soon.
