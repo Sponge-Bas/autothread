@@ -6,7 +6,7 @@ long_description = (this_directory / "README.md").read_text()
 setup(
   name = 'autothread',
   packages = ['autothread'],
-  version = '0.0.2',
+  version = '0.0.3',
   license='MIT',
   long_description=long_description,
   long_description_content_type='text/markdown',

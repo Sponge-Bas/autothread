@@ -140,9 +140,9 @@ class _Multiprocessed:
         self._queue = self._Queue()
         self._processes = []
         self._sema = self._Semaphore(self.n_workers if self.n_workers > 0 else int(1e9))
-        loop_params = kwargs.pop("_loop_params", None)
+        self._loop_params = kwargs.pop("_loop_params", [])
         self._merge_args(args, kwargs)
-        self._loop_params = self._get_loop_params(loop_params)
+        self._loop_params = self._get_loop_params(self._loop_params)
         self._verify_loop_params(self._loop_params)
 
     def _merge_args(self, args: Tuple, kwargs: Dict):
@@ -165,7 +165,7 @@ class _Multiprocessed:
                 break
             self._kwargs[self._arg_names[i]] = {"value": v, "is_kwarg": False}
         for k, v in kwargs.items():
-            if not k in self._params:
+            if not (k in self._params or k in self._loop_params):
                 self._extra_kwargs[k] = v
             else:
                 self._kwargs[k] = {"value": v, "is_kwarg": True}
@@ -226,10 +226,10 @@ class _Multiprocessed:
         :param loop_params: List of loop_parameters provided by _get_loop_params
         """
         for param in loop_params:
-            if not param in self._kwargs:
+            if not (param in self._kwargs or param in self._extra_kwargs):
                 raise ValueError(
                     f"'{param}' is specified as loop parameter but does not "
-                    " exist for this function or is not provided. Choose one "
+                    "exist for this function or is not provided. Choose one "
                     f"of {list(self._kwargs)}"
                 )
         if any(
