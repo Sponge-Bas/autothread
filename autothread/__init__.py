@@ -4,6 +4,7 @@
 # held responsible for any problems caused by the use of this module.
 
 import ctypes
+import functools
 import inspect
 import multiprocess as mp
 import os
@@ -349,7 +350,14 @@ def multiprocessed(
     :param progress_bar: Visualize how many of the tasks are completed
     """
 
-    def _decorator(function):
+    def _decorator(function, *args, **kwargs):
+        if not callable(function):
+            raise SyntaxError(
+                f"multiprocessed did not receive a function, but a {type(function)}."
+                "\nYou may need to replace `@multiprocessed` with `@multiprocessed()`"
+                "\n                                                               ~~"
+            )
+
         decorator = _Multiprocessed(
             function=function,
             Process=mp.Process,
@@ -359,6 +367,7 @@ def multiprocessed(
             progress_bar=progress_bar,
         )
 
+        @functools.wraps(function)
         def wrapper(*args, **kwargs):
             return decorator(*args, **kwargs)
 
@@ -389,7 +398,14 @@ def multithreaded(
     :param progress_bar: Visualize how many of the tasks are completed
     """
 
-    def _decorator(function):
+    def _decorator(function, *args, **kwargs):
+        if not callable(function):
+            raise SyntaxError(
+                f"multithreaded did not receive a function, but a {type(function)}."
+                "\nYou may need to replace `@multithreaded` with `@multithreaded()`"
+                "\n                                                             ~~"
+            )
+
         decorator = _Multiprocessed(
             function=function,
             Process=threading.Thread,
@@ -399,6 +415,7 @@ def multithreaded(
             progress_bar=progress_bar,
         )
 
+        @functools.wraps(function)
         def wrapper(*args, **kwargs):
             return decorator(*args, **kwargs)
 

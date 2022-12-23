@@ -27,7 +27,7 @@ if os.environ["AUTOTHREAD_UNITTEST_MODE"] == "threaded":
     print("RUNNING TESTS USING MULTITHREADING")
 else:
     testfunc = multiprocessed
-    print("RUNNING TESTS USING MULTITHPROCESSING")
+    print("RUNNING TESTS USING MULTIPROCESSING")
 
 
 @testfunc()
