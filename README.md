@@ -58,7 +58,7 @@ The decorators take 4 arguments to configure the executing:
 
 ## How it works
 Autothread uses the type-hinting of your funtion to reliably determine which paremeters
-you intent to keep constant and which parameters need to change for every thread.
+you intend to keep constant and which parameters need to change for every thread.
 
 For example
 ```python3
