@@ -88,4 +88,4 @@ If you want the threads to clean things up before exiting, just intercept the `K
 exeption and do the cleanup (just like you would in a single threaded case).
 
 ## Known issues
-- using `multiprocessing` on a windows machine is usable in basic cases but still unstable
+None at the moment, please open a bug if you run into an issue.

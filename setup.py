@@ -14,7 +14,7 @@ setup(
   author_email = 'basdbruijne@gmail.com',
   url = 'https://github.com/Basdbruijne/autothread',
   keywords = ['multithreading', 'multiprocessing', 'decorator'],
-  install_requires = ['psutil', 'tqdm', 'typeguard', 'typing', 'mock'],
+  install_requires = ['psutil', 'tqdm', 'typeguard', 'typing', 'mock', 'multiprocess'],
   classifiers=[  # Optional
     # How mature is this project? Common values are
     #   3 - Alpha
