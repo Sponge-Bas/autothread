@@ -88,4 +88,4 @@ If you want the threads to clean things up before exiting, just intercept the `K
 exeption and do the cleanup (just like you would in a single threaded case).
 
 ## Known issues
-- Is it currently not possible to use `autothread.multiprocessed` within a class on a Windows machine due to issues with pickling the class. A fix will come soon.
+None at this moment, please open a bug if you run into issues.
