@@ -310,7 +310,7 @@ class TestErrors(unittest.TestCase):
             if x == 2:
                 time.sleep(1)
                 raise ValueError()
-            for _ in range(10):
+            for _ in range(20):
                 time.sleep(0.5)
             return x, y, x * y
         except KeyboardInterrupt:
@@ -323,7 +323,7 @@ class TestErrors(unittest.TestCase):
             self._error_mt_catch(list(range(20)), 16)
 
         if testfunc == multithreaded:
-            self.assertTrue(self.cleanup_script.call_count == 19)
+            self.assertEqual(self.cleanup_script.call_count, 19)
         ## TODO: verify this for multiprocessed too
 
     @testfunc(n_workers=2)
@@ -332,7 +332,7 @@ class TestErrors(unittest.TestCase):
             if x == 2:
                 time.sleep(1)
                 raise ValueError()
-            for _ in range(10):
+            for _ in range(20):
                 time.sleep(0.5)
             return x, y, x * y
         except KeyboardInterrupt:
@@ -345,7 +345,7 @@ class TestErrors(unittest.TestCase):
             self._error_mt_catch_2_workers(list(range(20)), 16)
 
         if testfunc == multithreaded:
-            self.assertTrue(self.cleanup_script2.call_count == 2)
+            self.assertEqual(self.cleanup_script2.call_count, 2)
         ## TODO: verify this for multiprocessed too
 
 
