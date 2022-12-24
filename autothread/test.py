@@ -50,7 +50,7 @@ class TestThreadypyBasic(unittest.TestCase):
             result = method([1, 2, 3, 4], 5)
             duration = time.time() - start
 
-            self.assertTrue(duration < 1)
+            self.assertLess(duration, 2)
             self.assertEqual(result, [5, 10, 15, 20])
 
     def test_basic_case2(self):
@@ -59,7 +59,7 @@ class TestThreadypyBasic(unittest.TestCase):
             result = method([1, 2, 3, 4], [1, 2, 3, 4])
             duration = time.time() - start
 
-            self.assertTrue(duration < 1)
+            self.assertLess(duration, 2)
             self.assertEqual(result, [1, 4, 9, 16])
 
     def test_basic_case3(self):
@@ -68,7 +68,7 @@ class TestThreadypyBasic(unittest.TestCase):
             result = method(1, [1, 2, 3, 4])
             duration = time.time() - start
 
-            self.assertTrue(duration < 1)
+            self.assertLess(duration, 2)
             self.assertEqual(result, [1, 2, 3, 4])
 
 
@@ -85,7 +85,7 @@ class TestThreadypyKeyword(unittest.TestCase):
         result = basic2([1, 2, 3, 4], 5)
         duration = time.time() - start
 
-        self.assertTrue(duration < 1)
+        self.assertLess(duration, 2)
         self.assertEqual(result, [5, 10, 15, 20])
 
     def test_basic_case2(self):
@@ -93,7 +93,7 @@ class TestThreadypyKeyword(unittest.TestCase):
         result = basic2([1, 2, 3, 4], y=[1, 2, 3, 4])
         duration = time.time() - start
 
-        self.assertTrue(duration < 1)
+        self.assertLess(duration, 2)
         self.assertEqual(result, [1, 4, 9, 16])
 
     def test_basic_case3(self):
@@ -101,7 +101,7 @@ class TestThreadypyKeyword(unittest.TestCase):
         result = basic2(1, [1, 2, 3, 4])
         duration = time.time() - start
 
-        self.assertTrue(duration < 1)
+        self.assertLess(duration, 2)
         self.assertEqual(result, [1, 2, 3, 4])
 
 
@@ -125,7 +125,7 @@ class TestThreadypyMixedKeyword(unittest.TestCase):
             result = method(y=[1, 2, 3, 4], x=5)
             duration = time.time() - start
 
-            self.assertTrue(duration < 1)
+            self.assertLess(duration, 2)
             self.assertEqual(result, [(5, 1, 5), (5, 2, 10), (5, 3, 15), (5, 4, 20)])
 
     def test_basic_case2(self):
@@ -134,7 +134,7 @@ class TestThreadypyMixedKeyword(unittest.TestCase):
             result = method(x=[2, 2, 3, 4], y=[1, 2, 3, 4])
             duration = time.time() - start
 
-            self.assertTrue(duration < 1)
+            self.assertLess(duration, 2)
             self.assertEqual(result, [(2, 1, 2), (2, 2, 4), (3, 3, 9), (4, 4, 16)])
 
     def test_basic_case3(self):
@@ -143,7 +143,7 @@ class TestThreadypyMixedKeyword(unittest.TestCase):
             result = method(y=1, x=[1, 2, 3, 4])
             duration = time.time() - start
 
-            self.assertTrue(duration < 1)
+            self.assertLess(duration, 2)
             self.assertEqual(result, [(1, 1, 1), (2, 1, 2), (3, 1, 3), (4, 1, 4)])
 
 
@@ -167,7 +167,7 @@ class TestThreadypyExtraArgs(unittest.TestCase):
             result = method(5, 1e17, z=45, y=[1, 2, 3, 4])
             duration = time.time() - start
 
-            self.assertTrue(duration < 1)
+            self.assertLess(duration, 2)
             self.assertEqual(result, [(5, 1, 5), (5, 2, 10), (5, 3, 15), (5, 4, 20)])
 
     def test_basic_case2(self):
@@ -176,7 +176,7 @@ class TestThreadypyExtraArgs(unittest.TestCase):
             result = method([2, 2, 3, 4], [3, 3, 4, 2])
             duration = time.time() - start
 
-            self.assertTrue(duration < 1)
+            self.assertLess(duration, 2)
             self.assertEqual(result, [(2, 6, 12), (2, 6, 12), (3, 6, 18), (4, 6, 24)])
 
     def test_basic_case3(self):
@@ -189,7 +189,7 @@ class TestThreadypyExtraArgs(unittest.TestCase):
             )
             duration = time.time() - start
 
-            self.assertTrue(duration < 1)
+            self.assertLess(duration, 2)
             self.assertEqual(result, [(1, 1, 1), (2, 1, 2), (3, 1, 3), (4, 1, 4)])
 
     def test_basic_case4(self):
@@ -202,7 +202,7 @@ class TestThreadypyExtraArgs(unittest.TestCase):
             )
             duration = time.time() - start
 
-            self.assertTrue(duration < 1)
+            self.assertLess(duration, 2)
             self.assertEqual(result, [(1, 1, 1)])
 
 
