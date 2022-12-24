@@ -1,4 +1,4 @@
-name: auothread
+name: autothread_functional_tests
 
 on: [push]
 
@@ -22,8 +22,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r test-requirements.txt
       - name: Lint with black
+        if: ${{ matrix.platform == 'ubuntu-latest' && matrix.python-version == '3.11' }}
         run: |
           tox -e format
       - name: Run unittests
         run: |
-          tox -e threading,processing,coverage
+          tox -e threading,processing
+      - name: Get Coverage
+        if: ${{ matrix.platform == 'ubuntu-latest' && matrix.python-version == '3.11' }}
+        run: |
+          tox -e coverage
