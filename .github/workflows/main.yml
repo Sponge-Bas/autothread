@@ -22,13 +22,19 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r test-requirements.txt
       - name: Lint with black
-        if: ${{ matrix.platform == 'ubuntu-latest' && matrix.python-version == '3.11' }}
         run: |
-          tox -e format
-      - name: Run unittests
+          black --check autothread/__init__.py
+          black --check autothread/test.py
+      - name: Test threading
+        env:
+          AUTOTHREAD_UNITTEST_MODE: threaded
         run: |
-          tox -e threading,processing
+          python -m coverage run -m unittest
+      - name: Test threading
+        env:
+          AUTOTHREAD_UNITTEST_MODE: processed
+        run: |
+          python -m coverage run --append -m unittest
       - name: Get Coverage
-        if: ${{ matrix.platform == 'ubuntu-latest' && matrix.python-version == '3.11' }}
         run: |
-          tox -e coverage
+          python -m coverage report --include autothread/__init__.py --show-missing
