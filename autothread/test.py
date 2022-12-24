@@ -30,7 +30,7 @@ else:
     print("RUNNING TESTS USING MULTIPROCESSING")
 
 
-@testfunc()
+@testfunc(n_workers=-1)
 def basic(x: int, y: int):
     """doctstring"""
     time.sleep(0.5)
@@ -38,7 +38,7 @@ def basic(x: int, y: int):
 
 
 class TestThreadypyBasic(unittest.TestCase):
-    @testfunc()
+    @testfunc(n_workers=-1)
     def basic(self, x: int, y: int):
         """doctstring"""
         time.sleep(0.5)
@@ -72,7 +72,7 @@ class TestThreadypyBasic(unittest.TestCase):
             self.assertEqual(result, [1, 2, 3, 4])
 
 
-@testfunc()
+@testfunc(n_workers=-1)
 def basic2(x: int, y: int = 6):
     """doctstring"""
     time.sleep(0.5)
@@ -105,7 +105,7 @@ class TestThreadypyKeyword(unittest.TestCase):
         self.assertEqual(result, [1, 2, 3, 4])
 
 
-@testfunc()
+@testfunc(n_workers=-1)
 def basic3(x: int = 4, y: int = 6):
     """doctstring"""
     time.sleep(0.5)
@@ -113,7 +113,7 @@ def basic3(x: int = 4, y: int = 6):
 
 
 class TestThreadypyMixedKeyword(unittest.TestCase):
-    @testfunc()
+    @testfunc(n_workers=-1)
     def basic3(self, x: int = 4, y: int = 6):
         """doctstring"""
         time.sleep(0.5)
@@ -147,7 +147,7 @@ class TestThreadypyMixedKeyword(unittest.TestCase):
             self.assertEqual(result, [(1, 1, 1), (2, 1, 2), (3, 1, 3), (4, 1, 4)])
 
 
-@testfunc()
+@testfunc(n_workers=-1)
 def extra_args_kwargs(x: int, *args, y: int = 6, **kwags):
     """doctstring"""
     time.sleep(0.5)
@@ -155,7 +155,7 @@ def extra_args_kwargs(x: int, *args, y: int = 6, **kwags):
 
 
 class TestThreadypyExtraArgs(unittest.TestCase):
-    @testfunc()
+    @testfunc(n_workers=-1)
     def extra_args_kwargs(self, x: int, *args, y: int = 6, **kwags):
         """doctstring"""
         time.sleep(0.5)
@@ -207,7 +207,7 @@ class TestThreadypyExtraArgs(unittest.TestCase):
 
 
 class TestWarnings(unittest.TestCase):
-    @testfunc()
+    @testfunc(n_workers=-1)
     def _warnings(self, x, y: int, **kwargs):
         time.sleep(0.5)
         return x, y, x * y
@@ -242,7 +242,7 @@ class TestWarnings(unittest.TestCase):
 
 
 class TestLengthWarnings(unittest.TestCase):
-    @testfunc()
+    @testfunc(n_workers=-1)
     def _warnings(self, x: int, y: int, **kwargs):
         time.sleep(0.5)
         return x, y, x * y
@@ -258,7 +258,7 @@ class TestLengthWarnings(unittest.TestCase):
 
 
 class TestNestedList(unittest.TestCase):
-    @testfunc()
+    @testfunc(n_workers=-1)
     def _test(self, x: typing.List[int], y: int):
         time.sleep(0.5)
         return x, y, max(x) * y
