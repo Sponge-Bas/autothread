@@ -19,36 +19,24 @@ from tqdm import tqdm
 from typing import List, Union, Optional, Tuple, Dict
 
 
-def _checks_type(value, type_hint):
-    """Check if a value corresponds to a type hint
-
-    :param value: Value to check type hint for
-    :param type_hint: Type hint to validate
-    """
-    try:
-        typeguard.check_type("foo", value, type_hint)
-        return True
-    except TypeError:
-        return False
-
-
 def _queuer(queue, function, semaphore, index, *args, **kwargs):
-    """Function wrapper to put the outputs in the queue"""
+    """Function wrapper to put the outputs in the queue
+
+    The queuer is kept outside of the _Autothread class such that multiprocess doesn't
+    have to pickle/dill the entire class.
+    """
     try:
         output = function(*args, **kwargs)
     except KeyboardInterrupt:
         return
     except Exception as e:
-        e.tp_intercepted = True
+        e.autothread_intercepted = True
         output = e
     semaphore.release()
     queue.put({index: output})
 
 
-_is_listy = lambda x: isinstance(x, list) or isinstance(x, tuple)
-
-
-class _Multiprocessed:
+class _Autothread:
     """Decorator class that transforms a function into a multi processed
     function simply by adding a single decorator."""
 
@@ -64,6 +52,7 @@ class _Multiprocessed:
         self.n_workers = n_workers
         self._params = inspect.signature(self._function).parameters
         self._progress_bar = progress_bar
+        self._is_listy = lambda x: isinstance(x, list) or isinstance(x, tuple)
 
     @property
     def __signature__(self):
@@ -173,7 +162,7 @@ class _Multiprocessed:
 
         self._arg_lengths = {}
         for k, v in self._kwargs.items():
-            length = len(v["value"]) if _is_listy(v["value"]) else None
+            length = len(v["value"]) if self._is_listy(v["value"]) else None
             self._arg_lengths[k] = length
 
     def _get_loop_params(self, loop_params: Optional[List[str]]):
@@ -187,7 +176,7 @@ class _Multiprocessed:
         :param loop_params: Override list of loop_parameters provided by user
         """
         if loop_params:
-            if not _is_listy(loop_params):
+            if not self._is_listy(loop_params):
                 loop_params = [loop_params]
             return loop_params
 
@@ -199,21 +188,21 @@ class _Multiprocessed:
         )
         loop_params = []
         for k, v in self._kwargs.items():
-            if not k in self._params and _is_listy(v["value"]):
+            if not k in self._params and self._is_listy(v["value"]):
                 warnings.warn(_type_warning.format(k=k))
                 continue
             type_hint = self._params[k].annotation
-            if _checks_type(v["value"], type_hint):
+            if self._checks_type(v["value"], type_hint):
                 continue
-            elif _is_listy(v["value"]) and all(
-                _checks_type(_v, type_hint) for _v in v["value"]
+            elif self._is_listy(v["value"]) and all(
+                self._checks_type(_v, type_hint) for _v in v["value"]
             ):
                 loop_params.append(k)
-            elif _is_listy(v["value"]):
+            elif self._is_listy(v["value"]):
                 warnings.warn(_type_warning.format(k=k))
             # else: Type hint is incorrect but not list-y, we will just ignore it
         for k, v in self._extra_kwargs.items():
-            if _is_listy(v):
+            if self._is_listy(v):
                 warnings.warn(_type_warning.format(k=k))
         return loop_params
 
@@ -265,6 +254,18 @@ class _Multiprocessed:
 
             yield i, args, self._extra_kwargs
 
+    def _checks_type(self, value, type_hint):
+        """Check if a value corresponds to a type hint
+
+        :param value: Value to check type hint for
+        :param type_hint: Type hint to validate
+        """
+        try:
+            typeguard.check_type("foo", value, type_hint)
+            return True
+        except TypeError:
+            return False
+
     def _collect_result(self):
         """Collect the results from the queue and raise possible errors
 
@@ -281,15 +282,13 @@ class _Multiprocessed:
                 res = self._queue.get()
                 content = list(res.values())[0]
                 if isinstance(content, Exception) and getattr(
-                    content, "tp_intercepted", False
+                    content, "autothread_intercepted", False
                 ):
-                    for _ in range(2):
-                        try:
-                            self._kill_all()
-                            break
-                        except KeyboardInterrupt:
-                            # The main thread can accidentally be killed on some platforms
-                            pass
+                    try:
+                        self._kill_all()
+                    except KeyboardInterrupt:
+                        # The main thread can accidentally be killed on some platforms
+                        pass
                     raise content
                 return res
 
@@ -310,111 +309,52 @@ class _Multiprocessed:
             process.join()
 
 
-def _get_workers(*args):
-    """Determined the number of workers to use based on the users inputs
-
-    :param n_workers: Total number of workers to run in parallel (0 for unlimited,
-    (default) None for the amount of cores).
-    :param mb_mem: Minimum megabytes of memory for each worker.
-    :workers_per_core: Number of workers to run per core.
-    """
-    if sum(not arg is None for arg in args) > 1:
-        raise ValueError(
-            "Please only define either 'n_workers', 'mb_mem', 'or workers_per_core'."
-        )
-    n_workers, mb_mem, workers_per_core = args
-    if mb_mem:
-        return int(psutil.virtual_memory().total / 1024**2 // mb_mem)
-    elif workers_per_core:
-        return int(workers_per_core * mp.cpu_count())
-    elif n_workers is None:
-        return mp.cpu_count()
-    else:
-        return n_workers
-
-
-def multiprocessed(
-    n_workers: int = None,
-    mb_mem: int = None,
-    workers_per_core: float = None,
-    progress_bar: bool = False,
-):
-    """Decorator to make any function multiprocessed
-
-    This decorator will allow any function to receive a list where it would initially
-    receive single items. The function will be repeated for every item in that list in
-    parallel and the results will be concatenated into a list and returned back.
-
-    :param n_workers: Total number of workers to run in parallel (0 for unlimited,
-    (default) None for the amount of cores).
-    :param mb_mem: Minimum megabytes of memory for each worker.
-    :param workers_per_core: Number of workers to run per core.
-    :param progress_bar: Visualize how many of the tasks are completed
-    """
-
-    def _decorator(function, *args, **kwargs):
-        if not callable(function):
-            raise SyntaxError(
-                f"multiprocessed did not receive a function, but a {type(function)}."
-                "\nYou may need to replace `@multiprocessed` with `@multiprocessed()`"
-                "\n                                                               ~~"
-            )
-
-        decorator = _Multiprocessed(
-            function=function,
-            Process=mp.Process,
-            Queue=mp.Queue,
-            Semaphore=mp.Semaphore,
-            n_workers=_get_workers(n_workers, mb_mem, workers_per_core),
-            progress_bar=progress_bar,
-        )
-
-        @functools.wraps(function)
-        def wrapper(*args, **kwargs):
-            return decorator(*args, **kwargs)
-
-        wrapper.__doc__ = decorator.__doc__
-        wrapper.__signature__ = decorator.__signature__
-
-        return wrapper
-
-    return _decorator
-
-
-def multithreaded(
-    n_workers: int = None,
-    mb_mem: int = None,
-    workers_per_core: int = None,
-    progress_bar: bool = False,
-):
+class Multithreaded:
     """Decorator to make any function multithreaded
 
     This decorator will allow any function to receive a list where it would initially
     receive single items. The function will be repeated for every item in that list in
     parallel and the results will be concatenated into a list and returned back.
-
-    :param n_workers: Total number of workers to run in parallel (0 for unlimited,
-    (default) None for the amount of cores).
-    :param mb_mem: Minimum megabytes of memory for each worker.
-    :param workers_per_core: Number of workers to run per core.
-    :param progress_bar: Visualize how many of the tasks are completed
     """
 
-    def _decorator(function, *args, **kwargs):
+    Process = threading.Thread
+    Queue = queue.Queue
+    Semaphore = threading.Semaphore
+
+    def __init__(
+        self,
+        n_workers: int = None,
+        mb_mem: int = None,
+        workers_per_core: int = None,
+        progress_bar: bool = False,
+    ):
+        """Initialize the autothread decorator
+
+        :param n_workers: Total number of workers to run in parallel (0 for unlimited,
+        (default) None for the amount of cores).
+        :param mb_mem: Minimum megabytes of memory for each worker.
+        :param workers_per_core: Number of workers to run per core.
+        :param progress_bar: Visualize how many of the tasks are completed
+        """
+        self.n_workers = self._get_workers(n_workers, mb_mem, workers_per_core)
+        self.process_bar = progress_bar
+
+    def __call__(self, function, *args, **kwargs):
         if not callable(function):
             raise SyntaxError(
-                f"multithreaded did not receive a function, but a {type(function)}."
-                "\nYou may need to replace `@multithreaded` with `@multithreaded()`"
-                "\n                                                             ~~"
+                f"{self.__class__.__name__} did not receive a function, but a "
+                f"{str(type(function))}."
+                f"\n@autothread.{self.__class__.__name__}() <- Did you forget the ()?"
+                f"\n{' '*(len(self.__class__.__name__)+12)}~~"
             )
 
-        decorator = _Multiprocessed(
+        decorator = _Autothread(
             function=function,
-            Process=threading.Thread,
-            Queue=queue.Queue,
-            Semaphore=threading.Semaphore,
-            n_workers=_get_workers(n_workers, mb_mem, workers_per_core),
-            progress_bar=progress_bar,
+            Process=self.Process,
+            Queue=self.Queue,
+            Semaphore=self.Semaphore,
+            n_workers=self.n_workers,
+            progress_bar=self.process_bar,
         )
 
         @functools.wraps(function)
@@ -423,6 +363,44 @@ def multithreaded(
 
         wrapper.__doc__ = decorator.__doc__
         wrapper.__signature__ = decorator.__signature__
+
         return wrapper
 
-    return _decorator
+    def _get_workers(self, *args):
+        """Determined the number of workers to use based on the users inputs
+
+        :param n_workers: Total number of workers to run in parallel (0 for unlimited,
+        (default) None for the amount of cores).
+        :param mb_mem: Minimum megabytes of memory for each worker.
+        :workers_per_core: Number of workers to run per core.
+        """
+        if sum(not arg is None for arg in args) > 1:
+            raise ValueError(
+                "Please only define one of 'n_workers', 'mb_mem', 'or workers_per_core'"
+            )
+        n_workers, mb_mem, workers_per_core = args
+        if mb_mem:
+            return int(psutil.virtual_memory().total / 1024**2 // mb_mem)
+        elif workers_per_core:
+            return int(workers_per_core * mp.cpu_count())
+        elif n_workers is None:
+            return mp.cpu_count()
+        else:
+            return n_workers
+
+
+class Multiprocessed(Multithreaded):
+    """Decorator to make any function multiprocessed
+
+    This decorator will allow any function to receive a list where it would initially
+    receive single items. The function will be repeated for every item in that list in
+    parallel and the results will be concatenated into a list and returned back.
+    """
+
+    Process = mp.Process
+    Queue = mp.Queue
+    Semaphore = mp.Semaphore
+
+
+multithreaded = Multithreaded
+multiprocessed = Multiprocessed
