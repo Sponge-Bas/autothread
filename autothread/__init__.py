@@ -30,7 +30,7 @@ def _queuer(queue, function, semaphore, index, *args, **kwargs):
     except KeyboardInterrupt:
         return
     except Exception as e:
-        e.tp_intercepted = True
+        e.autothread_intercepted = True
         output = e
     semaphore.release()
     queue.put({index: output})
@@ -282,15 +282,13 @@ class _Autothread:
                 res = self._queue.get()
                 content = list(res.values())[0]
                 if isinstance(content, Exception) and getattr(
-                    content, "tp_intercepted", False
+                    content, "autothread_intercepted", False
                 ):
-                    for _ in range(2):
-                        try:
-                            self._kill_all()
-                            break
-                        except KeyboardInterrupt:
-                            # The main thread can accidentally be killed on some platforms
-                            pass
+                    try:
+                        self._kill_all()
+                    except KeyboardInterrupt:
+                        # The main thread can accidentally be killed on some platforms
+                        pass
                     raise content
                 return res
 
@@ -311,7 +309,7 @@ class _Autothread:
             process.join()
 
 
-class multithreaded:
+class Multithreaded:
     """Decorator to make any function multithreaded
 
     This decorator will allow any function to receive a list where it would initially
@@ -365,6 +363,7 @@ class multithreaded:
 
         wrapper.__doc__ = decorator.__doc__
         wrapper.__signature__ = decorator.__signature__
+
         return wrapper
 
     def _get_workers(self, *args):
@@ -390,7 +389,7 @@ class multithreaded:
             return n_workers
 
 
-class multiprocessed(multithreaded):
+class Multiprocessed(Multithreaded):
     """Decorator to make any function multiprocessed
 
     This decorator will allow any function to receive a list where it would initially
@@ -401,3 +400,7 @@ class multiprocessed(multithreaded):
     Process = mp.Process
     Queue = mp.Queue
     Semaphore = mp.Semaphore
+
+
+multithreaded = Multithreaded
+multiprocessed = Multiprocessed
