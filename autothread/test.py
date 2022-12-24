@@ -19,7 +19,7 @@ import time
 import typing
 import unittest
 
-from autothread import multiprocessed, multithreaded, _get_workers
+from autothread import multiprocessed, multithreaded
 from mock import patch, Mock
 
 if os.environ["AUTOTHREAD_UNITTEST_MODE"] == "threaded":
@@ -395,8 +395,8 @@ class TestLoopParams(unittest.TestCase):
 class TestGetWorkers(unittest.TestCase):
     def test_n_workers(self):
         n_workers, mb_mem, workers_per_core = 12, None, None
-        n_workers = _get_workers(n_workers, mb_mem, workers_per_core)
-        self.assertEqual(n_workers, 12)
+        testinstance = testfunc(n_workers, mb_mem, workers_per_core)
+        self.assertEqual(testinstance.n_workers, 12)
 
     @patch("autothread.psutil.virtual_memory")
     def test_mb_mem(self, mock_mem):
@@ -405,26 +405,26 @@ class TestGetWorkers(unittest.TestCase):
         mock_mem.return_value = mock_memory
 
         n_workers, mb_mem, workers_per_core = None, 1000, None
-        n_workers = _get_workers(n_workers, mb_mem, workers_per_core)
-        self.assertEqual(n_workers, 16)
+        testinstance = testfunc(n_workers, mb_mem, workers_per_core)
+        self.assertEqual(testinstance.n_workers, 16)
 
     @patch("autothread.mp.cpu_count")
     def test_workers_per_core(self, mock_cpu_count):
         mock_cpu_count.return_value = 8
 
         n_workers, mb_mem, workers_per_core = None, None, 4
-        n_workers = _get_workers(n_workers, mb_mem, workers_per_core)
-        self.assertEqual(n_workers, 32)
+        testinstance = testfunc(n_workers, mb_mem, workers_per_core)
+        self.assertEqual(testinstance.n_workers, 32)
 
     @patch("autothread.mp.cpu_count")
     def test_default(self, mock_cpu_count):
         mock_cpu_count.return_value = 8
 
         n_workers, mb_mem, workers_per_core = None, None, None
-        n_workers = _get_workers(n_workers, mb_mem, workers_per_core)
-        self.assertEqual(n_workers, 8)
+        testinstance = testfunc(n_workers, mb_mem, workers_per_core)
+        self.assertEqual(testinstance.n_workers, 8)
 
     def test_multiple(self):
         n_workers, mb_mem, workers_per_core = 12, None, 8
         with self.assertRaises(ValueError):
-            _get_workers(n_workers, mb_mem, workers_per_core)
+            testfunc(n_workers, mb_mem, workers_per_core)
