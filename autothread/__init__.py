@@ -283,11 +283,13 @@ class _Multiprocessed:
                 if isinstance(content, Exception) and getattr(
                     content, "tp_intercepted", False
                 ):
-                    try:
-                        self._kill_all()
-                    except KeyboardInterrupt:
-                        # The main thread can accidentally be killed on some platforms
-                        pass
+                    for _ in range(2):
+                        try:
+                            self._kill_all()
+                            break
+                        except KeyboardInterrupt:
+                            # The main thread can accidentally be killed on some platforms
+                            pass
                     raise content
                 return res
 
