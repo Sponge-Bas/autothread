@@ -26,17 +26,10 @@ jobs:
           black --check autothread/__init__.py
           black --check autothread/test.py
       - name: Test multiprocessing
-        if: ${{ matrix.os == 'ubuntu-latest'}}
         env:
           AUTOTHREAD_UNITTEST_MODE: processed
         run: |
           python -m coverage run -m unittest
-      - name: Test multiprocessing
-        if: ${{ matrix.os == 'windows-latest'}}
-        env:
-          AUTOTHREAD_UNITTEST_MODE: processed
-        run: |
-          python -m coverage run -m unittest || echo ERROR && exit /b
       - name: Test threading
         env:
           AUTOTHREAD_UNITTEST_MODE: threaded
