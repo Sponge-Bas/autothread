@@ -338,18 +338,14 @@ class TestErrors(unittest.TestCase):
 
     @testfunc(n_workers=2)
     def _error_mt_catch_2_workers(self, x: int, y: int):
-        try:
-            if x == 2:
-                time.sleep(1)
-                raise ValueError()
-            for _ in range(20):
-                time.sleep(0.5)
-            return x, y, x * y
-        except KeyboardInterrupt:
-            with open(
-                os.path.join(".tox", self.location, "tmp", f"tmp2-{x}"), "w"
-            ) as f:
-                f.write("foo")
+        if x == 0:
+            time.sleep(1)
+            raise ValueError()
+        for _ in range(20):
+            time.sleep(0.5)
+        with open(os.path.join(".tox", self.location, "tmp", f"tmp2-{x}"), "w") as f:
+            f.write("foo")
+        return x, y, x * y
 
     def test_doesnt_create_new_threads(self):
         if os.name == "nt":
@@ -360,13 +356,14 @@ class TestErrors(unittest.TestCase):
         with self.assertRaises(ValueError):
             self._error_mt_catch_2_workers(list(range(20)), 16)
 
+        count = 0
         for i in range(20):
             path = os.path.join(".tox", self.location, "tmp", f"tmp2-{i}")
-            if i in (3, 4):
-                self.assertTrue(os.path.exists(path))
+            if os.path.exists(path):
                 os.remove(path)
-            else:
-                self.assertFalse(os.path.exists(path))
+                count += 1
+
+        self.assertLessEqual(count, 2)
 
 
 class TestLoopParams(unittest.TestCase):
