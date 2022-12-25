@@ -64,7 +64,7 @@ Autothread uses the type-hinting of your funtion to reliably determine which par
 you intend to keep constant and which parameters need to change for every thread.
 
 In general, the argument is split over multiple threads/processes when:
-- The argument is a list of tuple.
+- The argument is a list or tuple.
 - The argument does not match the type hinting of the function.
 - All the items in the argument do match the type hinting of the function.
 
