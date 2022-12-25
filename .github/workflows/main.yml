@@ -27,12 +27,12 @@ jobs:
           black --check autothread/test.py
       - name: Test multiprocessing
         env:
-          AUTOTHREAD_UNITTEST_MODE: processed
+          AUTOTHREAD_UNITTEST_MODE: processing
         run: |
           python -m coverage run -m unittest
       - name: Test threading
         env:
-          AUTOTHREAD_UNITTEST_MODE: threaded
+          AUTOTHREAD_UNITTEST_MODE: threading
         run: |
           python -m coverage run --append -m unittest
       - name: Get Coverage

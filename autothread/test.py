@@ -22,7 +22,7 @@ import unittest
 from autothread import multiprocessed, multithreaded
 from mock import patch, Mock
 
-if os.environ["AUTOTHREAD_UNITTEST_MODE"] == "threaded":
+if os.environ["AUTOTHREAD_UNITTEST_MODE"] == "threading":
     testfunc = multithreaded
     print("RUNNING TESTS USING MULTITHREADING")
 else:
@@ -298,7 +298,7 @@ class TestErrors(unittest.TestCase):
         return x, y, x * y
 
     def test_raises_error(self):
-        if os.name == "nt":
+        if testfunc == multiprocessed and os.name == "nt":
             return  # skip on windows, TODO: fix that
 
         with self.assertRaises(ValueError):
@@ -317,20 +317,24 @@ class TestErrors(unittest.TestCase):
                 time.sleep(0.5)
             return x, y, x * y
         except KeyboardInterrupt:
-            self.cleanup_script()
+            with open(os.path.join(".tox", self.location, "tmp", f"tmp-{x}"), "w") as f:
+                f.write("foo")
 
     def test_throws_keyboardinterrupt(self):
-        if os.name == "nt":
+        if testfunc == multiprocessed and os.name == "nt":
             return  # skip on windows, TODO: fix that
 
-        self.cleanup_script = Mock()
+        self.location = os.environ["AUTOTHREAD_UNITTEST_MODE"]
 
         with self.assertRaises(ValueError):
             self._error_mt_catch(list(range(20)), 16)
 
-        if testfunc == multithreaded:
-            self.assertEqual(self.cleanup_script.call_count, 19)
-        ## TODO: verify this for multiprocessed too
+        for i in range(20):
+            if i == 2:
+                continue
+            path = os.path.join(".tox", self.location, "tmp", f"tmp-{i}")
+            self.assertTrue(os.path.exists(path))
+            os.remove(path)
 
     @testfunc(n_workers=2)
     def _error_mt_catch_2_workers(self, x: int, y: int):
@@ -342,20 +346,27 @@ class TestErrors(unittest.TestCase):
                 time.sleep(0.5)
             return x, y, x * y
         except KeyboardInterrupt:
-            self.cleanup_script2()
+            with open(
+                os.path.join(".tox", self.location, "tmp", f"tmp2-{x}"), "w"
+            ) as f:
+                f.write("foo")
 
     def test_doesnt_create_new_threads(self):
         if os.name == "nt":
             return  # skip on windows, TODO: fix that
 
-        self.cleanup_script2 = Mock()
+        self.location = os.environ["AUTOTHREAD_UNITTEST_MODE"]
 
         with self.assertRaises(ValueError):
             self._error_mt_catch_2_workers(list(range(20)), 16)
 
-        if testfunc == multithreaded:
-            self.assertEqual(self.cleanup_script2.call_count, 2)
-        ## TODO: verify this for multiprocessed too
+        for i in range(20):
+            path = os.path.join(".tox", self.location, "tmp", f"tmp2-{i}")
+            if i in (3, 4):
+                self.assertTrue(os.path.exists(path))
+                os.remove(path)
+            else:
+                self.assertFalse(os.path.exists(path))
 
 
 class TestLoopParams(unittest.TestCase):
@@ -437,3 +448,14 @@ class TestGetWorkers(unittest.TestCase):
         n_workers, mb_mem, workers_per_core = 12, None, 8
         with self.assertRaises(ValueError):
             testfunc(n_workers, mb_mem, workers_per_core)
+
+
+class TestProgressbar(unittest.TestCase):
+    @testfunc(n_workers=-1, progress_bar=True)
+    def _test(self, x: int, y: int):
+        time.sleep(0.5)
+        return x, y, x * y
+
+    def test_progressbar(self):
+        # Just check that it doesn't fail
+        self._test([10, 12, 5], 2)

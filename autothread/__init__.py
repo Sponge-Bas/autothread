@@ -3,6 +3,9 @@
 # autothread comes with ABSOLUTELY NO WARRANTY, the writer can not be
 # held responsible for any problems caused by the use of this module.
 
+__author__ = "Bas de Bruijne"
+__version__ = "0.0.6"
+
 import ctypes
 import functools
 import inspect
@@ -16,14 +19,25 @@ import typeguard
 import warnings
 
 from tqdm import tqdm
-from typing import List, Union, Optional, Tuple, Dict
+from typing import List, Union, Optional, Tuple, Dict, Callable, Type
 
 
-def _queuer(queue, function, semaphore, index, *args, **kwargs):
+def _queuer(
+    queue: Union[queue.Queue, mp.Queue],
+    function: Callable,
+    semaphore: Union[threading.Semaphore, mp.Semaphore],
+    index: int,
+    *args,
+    **kwargs,
+):
     """Function wrapper to put the outputs in the queue
 
     The queuer is kept outside of the _Autothread class such that multiprocess doesn't
     have to pickle/dill the entire class.
+    :param queue: Queue object to return values to
+    :param function: function to forward *args and **kwrags to
+    :param semaphore: Semaphore object (to limit the number of concurrent workers)
+    :param index: Index to track when this thread was started
     """
     try:
         output = function(*args, **kwargs)
@@ -40,10 +54,23 @@ class _Autothread:
     """Decorator class that transforms a function into a multi processed
     function simply by adding a single decorator."""
 
-    def __init__(self, function, Process, Queue, Semaphore, n_workers, progress_bar):
+    def __init__(
+        self,
+        function: Callable,
+        Process: Union[Type[threading.Thread], Type[mp.Process]],
+        Queue: Union[Type[queue.Queue], Type[mp.Queue]],
+        Semaphore: Union[Type[threading.Semaphore], Type[mp.Semaphore]],
+        n_workers: int,
+        progress_bar: bool,
+    ):
         """Initialize the decorator
 
         :param function: function to decorate
+        :param Process: Process/thread class
+        :param Queue: Queue class
+        :param Semaphore: Semaphore class
+        :param n_workers: Total number of workers to use
+        :oaram progress_bar: Whether to show a progress bar
         """
         self._Process = Process
         self._Queue = Queue
@@ -56,7 +83,7 @@ class _Autothread:
 
     @property
     def __signature__(self):
-        """Updates the __doc__ and __signature__ to match the received function"""
+        """Updates the __signature__ to match the received function"""
         signature = inspect.signature(self._function)
         new_params = []
         for k in self._params:
@@ -89,6 +116,7 @@ class _Autothread:
 
     @property
     def __doc__(self):
+        """Updates the __doc__ to match the received function"""
         if self._function.__doc__:
             return self._function.__doc__ + (
                 "\n This function is automatically parallelized using autothread. Any "
@@ -119,9 +147,12 @@ class _Autothread:
         while self._processes:
             results.update(self._collect_result())
 
+        if self._progress_bar:
+            self._tqdm.close()
+
         return [v[1] for v in sorted(results.items())]
 
-    def _setup(self, args, kwargs):
+    def _setup(self, args: Tuple, kwargs: Dict):
         """Setup the multiprocessing variables and arguments
 
         :param args: Arguments to forward to the function
@@ -242,7 +273,11 @@ class _Autothread:
         the value and put them in tuples and dicts to forward to the function.
         """
         n_threads = self._arg_lengths[self._loop_params[0]]
-        for i in tqdm(range(n_threads)) if self._progress_bar else range(n_threads):
+
+        if self._progress_bar:
+            self._tqdm = tqdm(total=n_threads)
+
+        for i in range(n_threads):
             args = [self._queue, self._function, self._sema, i]
             for k, v in self._kwargs.items():
                 value = v["value"][i] if k in self._loop_params else v["value"]
@@ -277,8 +312,13 @@ class _Autothread:
             for process in self._processes:
                 if process.is_alive():
                     continue
+
                 process.join()
                 self._processes.remove(process)
+
+                if self._progress_bar:
+                    self._tqdm.update(1)
+
                 res = self._queue.get()
                 content = list(res.values())[0]
                 if isinstance(content, Exception) and getattr(
@@ -339,7 +379,7 @@ class Multithreaded:
         self.n_workers = self._get_workers(n_workers, mb_mem, workers_per_core)
         self.process_bar = progress_bar
 
-    def __call__(self, function, *args, **kwargs):
+    def __call__(self, function: Callable, *args, **kwargs):
         if not callable(function):
             raise SyntaxError(
                 f"{self.__class__.__name__} did not receive a function, but a "
