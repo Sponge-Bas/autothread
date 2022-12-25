@@ -317,12 +317,20 @@ class TestErrors(unittest.TestCase):
                 time.sleep(0.5)
             return x, y, x * y
         except KeyboardInterrupt:
-            with open(os.path.join(".tox", self.location, "tmp", f"tmp-{x}"), "w") as f:
+            with open(os.path.join(".tmp", f"tmp-{x}"), "w") as f:
                 f.write("foo")
 
     def test_throws_keyboardinterrupt(self):
         if testfunc == multiprocessed and os.name == "nt":
             return  # skip on windows, TODO: fix that
+
+        if not os.path.isdir(".tmp"):
+            os.mkdir(".tmp")
+
+        for i in range(20):
+            path = os.path.join(".tmp", f"tmp-{i}")
+            if os.path.exists(path):
+                os.remove(path)
 
         self.location = os.environ["AUTOTHREAD_UNITTEST_MODE"]
 
@@ -332,9 +340,11 @@ class TestErrors(unittest.TestCase):
         for i in range(20):
             if i == 2:
                 continue
-            path = os.path.join(".tox", self.location, "tmp", f"tmp-{i}")
+            path = os.path.join(".tmp", f"tmp-{i}")
             self.assertTrue(os.path.exists(path))
             os.remove(path)
+
+        os.rmdir(".tmp")
 
     @testfunc(n_workers=2)
     def _error_mt_catch_2_workers(self, x: int, y: int):
@@ -343,13 +353,21 @@ class TestErrors(unittest.TestCase):
             raise ValueError()
         for _ in range(20):
             time.sleep(0.5)
-        with open(os.path.join(".tox", self.location, "tmp", f"tmp2-{x}"), "w") as f:
+        with open(os.path.join(".tmp", f"tmp2-{x}"), "w") as f:
             f.write("foo")
         return x, y, x * y
 
     def test_doesnt_create_new_threads(self):
         if os.name == "nt":
             return  # skip on windows, TODO: fix that
+
+        if not os.path.isdir(".tmp"):
+            os.mkdir(".tmp")
+
+        for i in range(20):
+            path = os.path.join(".tmp", f"tmp2-{i}")
+            if os.path.exists(path):
+                os.remove(path)
 
         self.location = os.environ["AUTOTHREAD_UNITTEST_MODE"]
 
@@ -364,6 +382,8 @@ class TestErrors(unittest.TestCase):
                 count += 1
 
         self.assertLessEqual(count, 2)
+
+        os.rmdir(".tmp")
 
 
 class TestLoopParams(unittest.TestCase):
