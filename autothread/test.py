@@ -18,6 +18,7 @@ import os
 import time
 import typing
 import unittest
+import uuid
 
 from autothread import multiprocessed, multithreaded
 from mock import patch, Mock
@@ -317,18 +318,19 @@ class TestErrors(unittest.TestCase):
                 time.sleep(0.5)
             return x, y, x * y
         except KeyboardInterrupt:
-            with open(os.path.join(".tmp", f"tmp-{x}"), "w") as f:
+            with open(os.path.join(self.dir, f"tmp-{x}"), "w") as f:
                 f.write("foo")
 
     def test_throws_keyboardinterrupt(self):
         if testfunc == multiprocessed and os.name == "nt":
             return  # skip on windows, TODO: fix that
 
-        if not os.path.isdir(".tmp"):
-            os.mkdir(".tmp")
+        self.dir = ".tmp" + str(uuid.uuid4())
+        if not os.path.isdir(self.dir):
+            os.mkdir(self.dir)
 
         for i in range(20):
-            path = os.path.join(".tmp", f"tmp-{i}")
+            path = os.path.join(self.dir, f"tmp-{i}")
             if os.path.exists(path):
                 os.remove(path)
 
@@ -340,11 +342,11 @@ class TestErrors(unittest.TestCase):
         for i in range(20):
             if i == 2:
                 continue
-            path = os.path.join(".tmp", f"tmp-{i}")
+            path = os.path.join(self.dir, f"tmp-{i}")
             self.assertTrue(os.path.exists(path))
             os.remove(path)
 
-        os.rmdir(".tmp")
+        os.rmdir(self.dir)
 
     @testfunc(n_workers=2)
     def _error_mt_catch_2_workers(self, x: int, y: int):
@@ -353,7 +355,7 @@ class TestErrors(unittest.TestCase):
             raise ValueError()
         for _ in range(20):
             time.sleep(0.5)
-        with open(os.path.join(".tmp", f"tmp2-{x}"), "w") as f:
+        with open(os.path.join(self.dir2, f"tmp2-{x}"), "w") as f:
             f.write("foo")
         return x, y, x * y
 
@@ -361,29 +363,28 @@ class TestErrors(unittest.TestCase):
         if os.name == "nt":
             return  # skip on windows, TODO: fix that
 
-        if not os.path.isdir(".tmp"):
-            os.mkdir(".tmp")
+        self.dir2 = ".tmp" + str(uuid.uuid4())
+        if not os.path.isdir(self.dir2):
+            os.mkdir(self.dir2)
 
         for i in range(20):
-            path = os.path.join(".tmp", f"tmp2-{i}")
+            path = os.path.join(self.dir2, f"tmp2-{i}")
             if os.path.exists(path):
                 os.remove(path)
-
-        self.location = os.environ["AUTOTHREAD_UNITTEST_MODE"]
 
         with self.assertRaises(ValueError):
             self._error_mt_catch_2_workers(list(range(20)), 16)
 
         count = 0
         for i in range(20):
-            path = os.path.join(".tox", self.location, "tmp", f"tmp2-{i}")
+            path = os.path.join(self.dir2, f"tmp2-{i}")
             if os.path.exists(path):
                 os.remove(path)
                 count += 1
 
         self.assertLessEqual(count, 2)
 
-        os.rmdir(".tmp")
+        os.rmdir(self.dir2)
 
 
 class TestLoopParams(unittest.TestCase):
