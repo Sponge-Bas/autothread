@@ -91,7 +91,7 @@ For an overview of more detailed behavior, check `threadpy/test.py`. This file c
 
 ## Error handling
 If one of the processes fails, autothread will send a keyboard interrupt signal to all
-the other running threads/processes to give them a change to handle the exit gracefully.
+the other running threads/processes to give them a chance to handle the exit gracefully.
 If you want the threads to clean things up before exiting, just intercept the `KeyboardInterrupt`
 exeption and do the cleanup (just like you would in a single threaded case).
 
