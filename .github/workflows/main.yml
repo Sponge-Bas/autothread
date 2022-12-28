@@ -23,8 +23,7 @@ jobs:
           pip install -r test-requirements.txt
       - name: Lint with black
         run: |
-          black --check autothread/__init__.py
-          black --check autothread/test.py
+          black --check autothread/
       - name: Test multiprocessing
         env:
           AUTOTHREAD_UNITTEST_MODE: processing
