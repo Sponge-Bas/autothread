@@ -32,7 +32,7 @@ print("Time expired: ", time.time()-start)
 ```
 
 `autothread.async_processed` works in the same way but uses multiprocessing instead of threading.
-More info can be found in the [non-blocking README](https://github.com/Basdbruijne/autothread/blob/main/README_non_blocking.md).
+More info can be found in the [non-blocking README](https://github.com/Basdbruijne/autothread/blob/main/docs/README_non_blocking.md).
 
 ## Blocking
 The blocking decorators of autothread change the function slightly, but give you more control
@@ -65,7 +65,7 @@ print("Time expired: ", time.time()-start)
     Time expired:  1.0041766166687012
 ```
 
-More info can be found in the [blocking README](https://github.com/Basdbruijne/autothread/blob/main/README_blocking.md).
+More info can be found in the [blocking README](https://github.com/Basdbruijne/autothread/blob/main/docs/README_blocking.md).
 
 ## Installing
 
