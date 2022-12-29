@@ -225,12 +225,10 @@ class TestObject(unittest.TestCase):
         return output
 
     def test_case1(self):
-        start = time.time()
         results = []
-        for i in range(4):
+        for _ in range(4):
             results.append(self.datetimetest())
 
+        time.sleep(5)
         for result in results:
             self.assertTrue(result < datetime.datetime.now())
-        duration = time.time() - start
-        self.assertLess(duration, 2)

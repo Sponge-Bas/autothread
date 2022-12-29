@@ -5,7 +5,7 @@ Parallelization made easy.
 Autothread contains a collection of decorators that make it as easy as possible to add
 threading or multiprocessing to your projects. Autothread has two types of decorators: blocking and non-blocking.
 
-## Non-blocking (not yet released on pypi)
+## Non-blocking
 Autothreads non-blocking decorators are the easiest way to add threading/multiprocessing to your
 project. You just need to add a single decorator, which changes your function to calculate in
 the background instead of blocking the script.
