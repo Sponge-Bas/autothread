@@ -207,15 +207,35 @@ class async_threaded(multithreaded):
             if not return_type is None:
                 __type__ = return_type
                 __name__ = return_type.__name__
-                __qualname__ = return_type.__name__
+                __qualname__ = return_type.__qualname__
                 __metaclass__ = return_type
+
+        overrides = (
+            "__delattr__",
+            "__doc__",
+            "__eq__",
+            "__format__",
+            "__ge__",
+            "__gt__",
+            "__hash__",
+            "__init_subclass__",
+            "__le__",
+            "__lt__",
+            "__module__",
+            "__ne__",
+            "__reduce__",
+            "__reduce_ex__",
+            "__sizeof__",
+            "__subclasshook__",
+            "__weakref__",
+        )
 
         if not return_type is None:
             for attr in dir(return_type):
                 if (
                     attr.startswith("__")
                     and attr.endswith("__")
-                    and not hasattr(Placeholder, attr)
+                    and (not hasattr(Placeholder, attr) or attr in overrides)
                 ):
                     setattr(Placeholder, attr, Placeholder.___forwarder___(attr))
 
