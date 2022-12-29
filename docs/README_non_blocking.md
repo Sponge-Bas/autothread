@@ -1,5 +1,5 @@
 # Autothread - Non-Blocking Decorators
-Autothreads non-blocking decorators make it even easier to fit threading/multiprocessing into your existing projects by making use of a non-blocking architecture very similar to async programming:
+Autothreads non-blocking decorators are the easiest way to fit threading/multiprocessing into your existing projects by making use of a non-blocking architecture very similar to async programming:
 
 ```python
 import autothread
@@ -34,10 +34,7 @@ The decorators take 3 arguments to configure the execution:
 - `workers_per_core` (int): Number of workers to run per core.
 
 ## How it works
-Autothread uses the return-type type-hinting of your method to determine what type of result
-you are expecting to receive from your function. When the function is called, autothread will 
-return a `_Placeholder` instance. This placeholder is very similar to a `concurrent.Future` but works
-without async programming. Instead, the `_Placeholder` will block the script when it is called for the second time.
+Autothread uses the return-type type-hinting of your method to determine what type of result you are expecting to receive from your function. When the function is called, autothread will return a `_Placeholder` instance. This placeholder is very similar to a `concurrent.Future` but works without async programming. Instead, the `_Placeholder` will block the script when it is called for the second time.
 
 ```python
 # Start the thread and receive the placeholder
@@ -48,6 +45,19 @@ placeholder = example(i, 10)
 
 placeholder += 5
 print(placeholder)
+```
+
+Since autothread knows the return-type of your function, in can generate a placeholder that behaves identially to the final object. The only operation for which the placeholder is different from the final object is `type`:
+
+```python
+placeholder = example(i, 10)
+
+type(placeholder) == int
+>>> False
+
+# Instead use isinstance:
+isinstance(placeholder, int)
+>>> True
 ```
 
 ## Error handling

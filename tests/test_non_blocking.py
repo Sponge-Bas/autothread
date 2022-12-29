@@ -14,6 +14,7 @@ When contributing:
 - All the tests must pass on both windows and linux
 """
 
+import datetime
 import os
 import time
 import unittest
@@ -177,7 +178,7 @@ def error(x: int, y: int) -> int:
     return x * y
 
 
-class TestAsyncStr(unittest.TestCase):
+class TestAsyncError(unittest.TestCase):
     @testfunc(n_workers=-1)
     def error(self, x: int, y: int) -> int:
         """doctstring"""
@@ -187,7 +188,6 @@ class TestAsyncStr(unittest.TestCase):
 
     def test_case1(self):
         for method in (error, self.error):
-            start = time.time()
             results = []
             for i in range(4):
                 results.append(method(i + 1, 5))
@@ -195,3 +195,42 @@ class TestAsyncStr(unittest.TestCase):
             for result in results:
                 with self.assertRaises(TypeError):
                     result += 1
+
+
+class TestBool(unittest.TestCase):
+    @testfunc(n_workers=-1)
+    def booltest(self, x: int, y: int) -> bool:
+        """doctstring"""
+        time.sleep(0.5)
+        return x == y
+
+    def test_case1(self):
+        start = time.time()
+        results = []
+        for i in range(4):
+            results.append(self.booltest(i, 2))
+
+        self.assertTrue(results[2])
+        self.assertFalse(results[0])
+        duration = time.time() - start
+        self.assertLess(duration, 2)
+
+
+class TestObject(unittest.TestCase):
+    @testfunc(n_workers=-1)
+    def datetimetest(self) -> datetime.datetime:
+        """doctstring"""
+        output = datetime.datetime.now()
+        time.sleep(0.5)
+        return output
+
+    def test_case1(self):
+        start = time.time()
+        results = []
+        for i in range(4):
+            results.append(self.datetimetest())
+
+        for result in results:
+            self.assertTrue(result < datetime.datetime.now())
+        duration = time.time() - start
+        self.assertLess(duration, 2)
