@@ -40,4 +40,4 @@ jobs:
           python -m coverage run --append -m unittest
       - name: Get Coverage
         run: |
-          python -m coverage report --include autothread/*.py --show-missing
+          python -m coverage report --show-missing
