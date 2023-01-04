@@ -37,10 +37,9 @@ class _Placeholder:
         self.___queue___ = self.___Queue___()
         self.___process___ = self.___Process___(
             target=_queuer,
-            args=(self.___queue___, function, self.___semaphore___, 0, *args),
+            args=(self.___queue___, function, self.___semaphore___, 0, False, *args),
             kwargs=kwargs,
         )
-        self.___semaphore___.acquire()
         self.___process___.start()
 
     def ___get_response___(self) -> Any:
@@ -78,9 +77,15 @@ class _Placeholder:
         )
 
     def __str__(self) -> str:
+        """Forward __str__
+
+        Many classes do not have the string method, in that case we just return the
+        object itself
+        """
         return getattr(self.___get_response___(), "__str__", self.___get_response___)()
 
     def __repr__(self) -> str:
+        """Forward __repr__"""
         return getattr(self.___get_response___(), "__repr__", self.___get_response___)()
 
     def __del__(self) -> None:

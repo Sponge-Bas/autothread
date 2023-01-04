@@ -4,7 +4,7 @@
 # held responsible for any problems caused by the use of this module.
 
 __author__ = "Bas de Bruijne"
-__version__ = "0.0.6"
+__version__ = "0.0.7"
 
 import functools
 import inspect
@@ -16,7 +16,7 @@ import warnings
 
 from autothread.blocking import _Autothread
 from autothread.non_blocking import _Placeholder
-from typing import Callable
+from typing import Callable, Union
 
 
 class multithreaded:

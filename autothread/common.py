@@ -10,6 +10,7 @@ def _queuer(
     function: Callable,
     semaphore: Union[threading.Semaphore, mp.Semaphore],
     index: int,
+    sem_pre_acquired: bool,
     *args,
     **kwargs,
 ):
@@ -21,7 +22,10 @@ def _queuer(
     :param function: function to forward *args and **kwrags to
     :param semaphore: Semaphore object (to limit the number of concurrent workers)
     :param index: Index to track when this thread was started
+    :param sem_pre_acquired: True if semaphore already is acquired for this process
     """
+    if not sem_pre_acquired:
+        semaphore.acquire()
     try:
         output = function(*args, **kwargs)
     except KeyboardInterrupt:

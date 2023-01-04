@@ -8,18 +8,35 @@ from time import sleep as heavyworkload
 
 @autothread.async_threaded() # <-- This is all you need to add
 def example(x, y) -> int:
+    print(f"{x} started")
     heavyworkload(1)
+    print(f"{x} finished")
     return x*y
 
+print("Queueing threads")
 start = time.time()
 results = []
 for i in range(5):
     results.append(example(i, 10))
 
+print("Waiting for results")
 print(results)
 print("Time expired: ", time.time()-start)
+ 
+>>> Queueing threads
+>>> 0 started
+>>> 1 started
+>>> 2 started
+>>> 3 started
+>>> 4 started
+>>> Waiting for results
+>>> 0 finished
+>>> 4 finished
+>>> 2 finished
+>>> 1 finished
+>>> 3 finished
 >>> [0, 10, 20, 30, 40]
-    Time expired:  1.002363681793213
+>>> Time expired:  1.0017051696777344
 ```
 
 `autothread.async_processed` works in the same way but uses multiprocessing instead of threading.

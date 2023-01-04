@@ -241,7 +241,7 @@ class _Autothread:
             self._tqdm = tqdm(total=n_threads)
 
         for i in range(n_threads):
-            args = [self._queue, self._function, self._sema, i]
+            args = [self._queue, self._function, self._sema, i, True]
             for k, v in self._kwargs.items():
                 value = v["value"][i] if k in self._loop_params else v["value"]
                 if v["is_kwarg"]:
