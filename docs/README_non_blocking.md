@@ -77,7 +77,60 @@ isinstance(placeholder, int)
 >>> True
 ```
 
+When running the function just one time, there will be no benefit in speed. The advantage of autothread is that you can run the function multiple times in parellel. For this, you do need to keep in mind how autothread works:
+
+```python
+import autothread
+import time
+from time import sleep as heavyworkload
+
+@autothread.async_processed() # <-- This is all you need to add
+def example(x: int, y: int):
+    heavyworkload(1)
+    return x*y
+
+
+# This will have no benefit, since the result of `example` is needed right away
+start = time.time()
+for i in range(5):
+    result = example(i, 10)
+    print(result)
+print("Time expired: ", time.time()-start)
+
+"""
+>>> 0
+>>> 10
+>>> 20
+>>> 30
+>>> 40
+>>> Time expired:  5.047433137893677
+"""
+
+# Instead, queue all the functions first and run the actions in a seperate loop:
+start = time.time()
+results = []
+for i in range(5):
+    results.append(example(i, 10))
+    
+for result in results:
+    print(result)
+print("Time expired: ", time.time()-start)
+
+"""
+>>> 0
+>>> 10
+>>> 20
+>>> 30
+>>> 40
+>>> Time expired:  1.0173027515411377
+"""
+```
+
 ## Error handling
 Autothread makes the calling of the function non-blocking, but blocks the code untill the
 function is done when the fist operation is performed on the functions return value. This means
 that any error that comes up will be raised on the first operation on the return value.
+
+All the threads/processes that were queued will continue to run since autothread can't know
+if the exceptions were intercepted or not. The best way to handle exceptions is to catch them
+in the function that is autothreaded itself, not when calling the funcion or using its output.
