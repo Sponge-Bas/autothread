@@ -1,5 +1,6 @@
-# Autothread
+[![autothread_functional_tests](https://github.com/Basdbruijne/autothread/actions/workflows/main.yml/badge.svg)](https://github.com/Basdbruijne/autothread/actions/workflows/main.yml)
 
+# Autothread
 Parallelization made easy.
 
 Autothread contains a collection of decorators that make it as easy as possible to add
