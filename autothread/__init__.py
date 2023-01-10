@@ -4,7 +4,7 @@
 # held responsible for any problems caused by the use of this module.
 
 __author__ = "Bas de Bruijne"
-__version__ = "0.0.7"
+__version__ = "0.0.8"
 
 import functools
 import inspect
@@ -206,28 +206,22 @@ class async_threaded(multithreaded):
             ___Process___ = self.Process
             if not return_type is None:
                 __type__ = return_type
-                __name__ = return_type.__name__
-                __qualname__ = return_type.__qualname__
                 __metaclass__ = return_type
+            if hasattr(return_type, "__name__"):
+                __name__ = return_type.__name__
+            if hasattr(return_type, "__qualname__"):
+                __qualname__ = return_type.__qualname__
 
-        overrides = (
-            "__delattr__",
-            "__doc__",
-            "__eq__",
-            "__format__",
-            "__ge__",
-            "__gt__",
-            "__hash__",
-            "__init_subclass__",
-            "__le__",
-            "__lt__",
-            "__module__",
-            "__ne__",
-            "__reduce__",
-            "__reduce_ex__",
-            "__sizeof__",
-            "__subclasshook__",
-            "__weakref__",
+        no_override = (
+            "__class__",
+            "__del__",
+            "__dict__",
+            "__getattribute__",
+            "__init__",
+            "__new__",
+            "__repr__",
+            "__setattr__",
+            "__str__",
         )
 
         if not return_type is None:
@@ -235,7 +229,7 @@ class async_threaded(multithreaded):
                 if (
                     attr.startswith("__")
                     and attr.endswith("__")
-                    and (not hasattr(Placeholder, attr) or attr in overrides)
+                    and not attr in no_override
                 ):
                     setattr(Placeholder, attr, Placeholder.___forwarder___(attr))
 
