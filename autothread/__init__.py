@@ -4,7 +4,7 @@
 # held responsible for any problems caused by the use of this module.
 
 __author__ = "Bas de Bruijne"
-__version__ = "0.0.8"
+__version__ = "0.0.9"
 
 import functools
 import inspect
@@ -52,6 +52,7 @@ class multithreaded:
         mb_mem: int = None,
         workers_per_core: int = None,
         progress_bar: bool = False,
+        ignore_errors: bool = False,
     ):
         """Initialize the autothread decorator
 
@@ -60,6 +61,7 @@ class multithreaded:
         :param mb_mem: Minimum megabytes of memory for each worker.
         :param workers_per_core: Number of workers to run per core.
         :param progress_bar: Visualize how many of the tasks are completed
+        :param ignore_errors: Return `None` when an error is encountered
         """
         if callable(n_workers):
             raise SyntaxError(
@@ -70,6 +72,7 @@ class multithreaded:
 
         self.n_workers = self._get_workers(n_workers, mb_mem, workers_per_core)
         self.process_bar = progress_bar
+        self.ignore_errors = ignore_errors
 
     def __call__(self, function: Callable):
         decorator = _Autothread(
@@ -79,6 +82,7 @@ class multithreaded:
             Semaphore=self.Semaphore,
             n_workers=self.n_workers,
             progress_bar=self.process_bar,
+            ignore_errors=self.ignore_errors,
         )
 
         @functools.wraps(function)
@@ -176,6 +180,7 @@ class async_threaded(multithreaded):
         n_workers: int = None,
         mb_mem: int = None,
         workers_per_core: int = None,
+        ignore_errors: int = False,
     ):
         """Initialize the autothread decorator
 
@@ -183,12 +188,14 @@ class async_threaded(multithreaded):
         (default) None for the amount of cores).
         :param mb_mem: Minimum megabytes of memory for each worker.
         :param workers_per_core: Number of workers to run per core.
+        :param ignore_errors: Return `None` when an error is encountered
         """
 
         super().__init__(n_workers, mb_mem, workers_per_core)
         self.semaphore = self.Semaphore(
             self.n_workers if self.n_workers > 0 else int(1e9)
         )
+        self.ignore_errors = ignore_errors
 
     def __call__(self, function):
         return_type = inspect.signature(function).return_annotation
@@ -204,6 +211,7 @@ class async_threaded(multithreaded):
             ___semaphore___ = self.semaphore
             ___Queue___ = self.Queue
             ___Process___ = self.Process
+            ___ignore_errors___ = self.ignore_errors
             if not return_type is None:
                 __type__ = return_type
                 __metaclass__ = return_type

@@ -196,6 +196,21 @@ class TestAsyncError(unittest.TestCase):
                 with self.assertRaises(TypeError):
                     result += 1
 
+    @testfunc(n_workers=-1, ignore_errors=True)
+    def error_ignored(self, x: int, y: int) -> int:
+        """doctstring"""
+        time.sleep(0.5)
+        if x == 2:
+            raise TypeError()
+        return x * y
+
+    def test_case2(self):
+        results = []
+        for i in range(4):
+            results.append(self.error_ignored(i + 1, 5))
+
+        self.assertEqual(results, [5, None, 15, 20])
+
 
 class TestBool(unittest.TestCase):
     @testfunc(n_workers=-1)

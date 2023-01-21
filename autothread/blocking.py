@@ -25,6 +25,7 @@ class _Autothread:
         Semaphore: Union[Type[threading.Semaphore], Type[mp.Semaphore]],
         n_workers: int,
         progress_bar: bool,
+        ignore_errors: bool,
     ):
         """Initialize the decorator
 
@@ -33,7 +34,8 @@ class _Autothread:
         :param Queue: Queue class
         :param Semaphore: Semaphore class
         :param n_workers: Total number of workers to use
-        :oaram progress_bar: Whether to show a progress bar
+        :param progress_bar: Whether to show a progress bar
+        :param ignore_errors: Return `None` when an error is encountered
         """
         self._Process = Process
         self._Queue = Queue
@@ -43,6 +45,7 @@ class _Autothread:
         self._params = inspect.signature(self._function).parameters
         self._progress_bar = progress_bar
         self._is_listy = lambda x: isinstance(x, list) or isinstance(x, tuple)
+        self._ignore_errors = ignore_errors
 
     @property
     def __signature__(self):
@@ -292,7 +295,10 @@ class _Autothread:
                     except KeyboardInterrupt:
                         # The main thread can accidentally be killed on some platforms
                         pass
-                    raise content
+                    if self._ignore_errors:
+                        return {list(res)[0]: None}
+                    else:
+                        raise content
                 return res
 
     def _kill_all(self):

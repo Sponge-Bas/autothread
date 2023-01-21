@@ -12,6 +12,7 @@ class _Placeholder:
     ___semaphore___: Union[threading.Semaphore, mp.Semaphore] = None
     ___Queue___: Union[Type[queue.Queue], Type[mp.Queue]] = None
     ___Process___: Union[Type[threading.Thread], Type[mp.Process]] = None
+    ___ignore_errors___: bool = False
 
     @classmethod
     def ___forwarder___(cls, attr: str) -> Callable:
@@ -51,7 +52,10 @@ class _Placeholder:
             if isinstance(self.___response___, Exception) and getattr(
                 self.___response___, "autothread_intercepted", False
             ):
-                raise self.___response___
+                if self.___ignore_errors___:
+                    self.___response___ = None
+                else:
+                    raise self.___response___
         return self.___response___
 
     def __getattribute__(self, __name: str) -> Any:

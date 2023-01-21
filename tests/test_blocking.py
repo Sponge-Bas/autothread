@@ -290,23 +290,12 @@ class TestErrors(unittest.TestCase):
         time.sleep(5)
         return x, y, x * y
 
-    @testfunc(n_workers=-1)
-    def _error_mt(self, x: int, y: int):
-        if x == 2:
-            time.sleep(1)
-            raise ValueError()
-        time.sleep(5)
-        return x, y, x * y
-
     def test_raises_error(self):
         if testfunc == multiprocessed and os.name == "nt":
             return  # skip on windows, TODO: fix that
 
         with self.assertRaises(ValueError):
             self._error_mp(list(range(20)), 16)
-
-        with self.assertRaises(ValueError):
-            self._error_mt(list(range(20)), 16)
 
     @testfunc(n_workers=-1)
     def _error_mt_catch(self, x: int, y: int):
@@ -385,6 +374,23 @@ class TestErrors(unittest.TestCase):
         self.assertLessEqual(count, 2)
 
         os.rmdir(self.dir2)
+
+    @testfunc(n_workers=-1, ignore_errors=True)
+    def _error_ignore(self, x: int, y: int):
+        if x == 2:
+            time.sleep(1)
+            raise ValueError()
+        time.sleep(0.5)
+        return x, y, x * y
+
+    def test_doesnt_raise_error(self):
+        if testfunc == multiprocessed and os.name == "nt":
+            return  # skip on windows, TODO: fix that
+
+        self.assertEqual(
+            self._error_ignore(list(range(4)), 11),
+            [(0, 11, 0), (1, 11, 11), None, (3, 11, 33)],
+        )
 
 
 class TestLoopParams(unittest.TestCase):
