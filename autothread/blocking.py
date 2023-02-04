@@ -313,6 +313,9 @@ class _Autothread:
                     )
         else:
             for process in self._processes:
-                os.kill(process.pid, getattr(signal, "CTRL_C_EVENT", signal.SIGINT))
+                try:
+                    os.kill(process.pid, getattr(signal, "CTRL_C_EVENT", signal.SIGINT))
+                except ProcessLookupError:
+                    pass
         for process in self._processes:
             process.join()
