@@ -186,21 +186,35 @@ class _Autothread:
         loop_params = []
         for k, v in self._kwargs.items():
             if not k in self._params and self._is_listy(v["value"]):
-                warnings.warn(_type_warning.format(k=k))
+                warnings.warn(_type_warning.format(k=k), stacklevel=5)
                 continue
             type_hint = self._params[k].annotation
             if self._checks_type(v["value"], type_hint):
-                continue
+                pass
             elif self._is_listy(v["value"]) and all(
                 self._checks_type(_v, type_hint) for _v in v["value"]
             ):
                 loop_params.append(k)
             elif self._is_listy(v["value"]):
-                warnings.warn(_type_warning.format(k=k))
+                warnings.warn(_type_warning.format(k=k), stacklevel=5)
+            elif (
+                type_hint == inspect._empty
+                # value is 'self'
+                and getattr(getattr(v["value"], "__class__", None), "__name__", "")
+                != self._function.__qualname__.split(".")[0]
+                # value is 'cls'
+                and getattr(v["value"], "__name__", "")
+                != self._function.__qualname__.split(".")[0]
+            ):
+                warnings.warn(
+                    f"Parameter {k} = {v['value']} does not have type hints. Starting"
+                    "with Autothread 0.1.0, missing type hints will not be supported.",
+                    stacklevel=5,
+                )
             # else: Type hint is incorrect but not list-y, we will just ignore it
         for k, v in self._extra_kwargs.items():
             if self._is_listy(v):
-                warnings.warn(_type_warning.format(k=k))
+                warnings.warn(_type_warning.format(k=k), stacklevel=5)
         return loop_params
 
     def _verify_loop_params(self, loop_params: List[str]):
