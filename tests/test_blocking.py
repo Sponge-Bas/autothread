@@ -222,7 +222,7 @@ class TestWarnings(unittest.TestCase):
             "not be used for parallelization. It is possible that the type hints of "
             "this function are incorrect. If correct, use the `_loop_params` keyword "
             "argument to specify the parameters to parallelize for.",
-            stacklevel = 5,
+            stacklevel=5,
         )
 
     @patch("autothread.warnings.warn")
@@ -230,9 +230,10 @@ class TestWarnings(unittest.TestCase):
         result = self._warnings(2, [1, 3, 4])
         self.assertEqual(result, ([(2, 1, 2), (2, 3, 6), (2, 4, 8)]))
         mock_warn.assert_called_with(
-            'Parameter x = 2 does not have type hints. Startingwith Autothread 0.1.0, missing type hints will not be supported.',
-            stacklevel = 5,
+            "Parameter x = 2 does not have type hints. Startingwith Autothread 0.1.0, missing type hints will not be supported.",
+            stacklevel=5,
         )
+
     @patch("autothread.warnings.warn")
     def test_missing_type_hint3(self, mock_warn):
         result = self._warnings(1, 2, z=[1, 3, 4])
@@ -242,7 +243,7 @@ class TestWarnings(unittest.TestCase):
             "not be used for parallelization. It is possible that the type hints of "
             "this function are incorrect. If correct, use the `_loop_params` keyword "
             "argument to specify the parameters to parallelize for.",
-            stacklevel = 5,
+            stacklevel=5,
         )
 
 
@@ -433,7 +434,7 @@ class TestLoopParams(unittest.TestCase):
             "not be used for parallelization. It is possible that the type hints of "
             "this function are incorrect. If correct, use the `_loop_params` keyword "
             "argument to specify the parameters to parallelize for.",
-            stacklevel = 5,
+            stacklevel=5,
         )
 
     def test_kwargs_loop_param(self):
