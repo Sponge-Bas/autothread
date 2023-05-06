@@ -1,5 +1,5 @@
 multiprocess
 psutil
 tqdm
-typeguard
+typeguard>=3.0.2
 typing

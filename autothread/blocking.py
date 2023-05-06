@@ -276,9 +276,9 @@ class _Autothread:
         :param type_hint: Type hint to validate
         """
         try:
-            typeguard.check_type("foo", value, type_hint)
+            typeguard.check_type(value, type_hint)
             return True
-        except TypeError:
+        except typeguard.TypeCheckError:
             return False
 
     def _collect_result(self):
