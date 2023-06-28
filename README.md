@@ -36,7 +36,7 @@ print("Time expired: ", time.time()-start)
 More info can be found in the [non-blocking README](https://github.com/Basdbruijne/autothread/blob/main/docs/README_non_blocking.md).
 
 ## Blocking
-The blocking decorators of autothread change the function slightly, but give you more control
+The blocking decorators of autothread change the function slightly but give you more control
 over when the function is executed:
 
 ```python
